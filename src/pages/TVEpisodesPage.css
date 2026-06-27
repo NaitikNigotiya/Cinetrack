@@ -1,0 +1,90 @@
+/* ─── TV Episodes Page ───────────────────────────────────────────────────────── */
+.episodes-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 16px);
+}
+
+.episodes-header {
+  padding: 24px 16px 12px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.episodes-back-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.episodes-header-title-box {
+  flex: 1;
+  min-width: 0;
+}
+
+.episodes-header-show-title {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.episodes-header-title {
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 1px;
+}
+
+/* ─── Season Pills Row ───────────────────────────────────────────────────────── */
+.seasons-scroll-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-default);
+  scrollbar-width: none;
+}
+.seasons-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
+.season-pill-btn {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-elevated);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.season-pill-btn--active {
+  border-color: var(--color-brand);
+  background: color-mix(in srgb, var(--color-brand) 12%, transparent);
+  color: var(--text-primary);
+}
+
+/* ─── Content ────────────────────────────────────────────────────────────────── */
+.episodes-content {
+  padding: 16px;
+}

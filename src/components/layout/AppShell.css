@@ -1,0 +1,5 @@
+.app-shell-main {
+  /* Ensure content is never hidden behind the fixed bottom nav */
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 8px);
+  min-height: 100vh;
+}

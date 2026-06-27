@@ -1,0 +1,156 @@
+/* ─── Offline Indicator Banner (Top of Screen) ───────────────────────────────── */
+.pwa-offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  padding: 8px 16px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), background var(--transition-fast) ease;
+  animation: ptr-slide-down 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ptr-slide-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.pwa-offline-indicator--offline {
+  background: var(--bg-elevated);
+  border-bottom: 2px solid var(--color-warning);
+  color: var(--text-primary);
+}
+
+.pwa-offline-indicator--online {
+  background: var(--color-success);
+  border-bottom: 2px solid var(--color-success);
+  color: #ffffff;
+}
+
+.pwa-offline-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pwa-offline-icon {
+  animation: pulse-glow 1.5s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* ─── PWA Install Banner & Update Prompts (Bottom of screen above Nav) ───────── */
+.pwa-install-banner,
+.pwa-update-prompt {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 12px);
+  left: 12px;
+  right: 12px;
+  z-index: 9999;
+  background: var(--color-brand);
+  color: var(--text-on-brand);
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pwa-install-title,
+.pwa-update-title {
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.pwa-install-desc,
+.pwa-update-desc {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.pwa-install-btn,
+.pwa-update-btn {
+  background: #000;
+  color: var(--color-brand);
+  border: none;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 150ms ease;
+  font-family: var(--font-family);
+}
+
+.pwa-install-btn:active,
+.pwa-update-btn:active {
+  transform: scale(0.97);
+}
+
+.pwa-install-dismiss-btn,
+.pwa-update-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-on-brand);
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 150ms ease;
+}
+
+.pwa-install-dismiss-btn:hover,
+.pwa-update-close-btn:hover {
+  opacity: 1;
+}
+
+/* ─── PWA Update Banner specific left styles ────────────────────────────────── */
+.pwa-update-prompt {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+}
+
+.pwa-update-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pwa-update-info-icon {
+  color: var(--color-brand);
+  flex-shrink: 0;
+}
+
+.pwa-update-desc {
+  color: var(--text-muted);
+}
+
+.pwa-update-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pwa-update-close-btn {
+  color: var(--text-muted);
+}

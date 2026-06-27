@@ -1,0 +1,8 @@
+/* App-level styles — component styles go here once pages are built */
+.app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: var(--font-family);
+}

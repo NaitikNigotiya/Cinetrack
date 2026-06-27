@@ -1,0 +1,368 @@
+/* ─── 1. Toasts Stacking Panel ────────────────────────────────────────────────── */
+.toast-panel-container {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+  width: 90%;
+  max-width: 360px;
+}
+
+.toast-pill {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  animation: toast-slide-down 250ms cubic-bezier(0.16, 1, 0.3, 1), toast-fade-out 250ms ease forwards;
+  animation-delay: 0s, var(--dismiss-delay, 2750ms);
+}
+
+@keyframes toast-slide-down {
+  from {
+    transform: translateY(-24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-fade-out {
+  to {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+}
+
+.toast-pill--success { background: var(--color-success); }
+.toast-pill--error { background: var(--color-error); }
+.toast-pill--info { background: var(--color-brand); color: #000; }
+.toast-pill--warning { background: var(--color-warning); color: #000; }
+
+.toast-icon {
+  flex-shrink: 0;
+}
+
+/* ─── 2. Skeletons ─────────────────────────────────────────────────────────── */
+.skeleton-line {
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-overlay);
+  margin-bottom: 6px;
+}
+.skeleton-line:last-child {
+  margin-bottom: 0;
+}
+
+.skeleton-poster-box {
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: var(--radius-lg);
+  background: var(--bg-overlay);
+}
+
+.skeleton-text-meta {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ─── 3. Empty States ────────────────────────────────────────────────────────── */
+.empty-state-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  gap: 12px;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  line-height: 1;
+  opacity: 0.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.empty-state-desc {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  max-width: 260px;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+
+.empty-state-action-btn {
+  margin-top: 8px;
+  padding: 10px 20px;
+  background: var(--color-brand);
+  color: var(--text-on-brand);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  max-width: 200px;
+  box-shadow: 0 4px 12px rgba(245, 197, 24, 0.2);
+  transition: transform 150ms ease;
+}
+.empty-state-action-btn:active {
+  transform: scale(0.97);
+}
+
+/* ─── 4. Poster Images placeholders ────────────────────────────────────────── */
+.poster-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-overlay);
+}
+
+.poster-image-el {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.poster-image-el--loaded {
+  opacity: 1;
+}
+
+.poster-placeholder-centered {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.poster-placeholder-centered--light {
+  background: #e2e8f0; /* gray-200 */
+  color: #64748b;
+}
+
+.poster-placeholder-centered--dark {
+  background: #2a2a2a;
+  color: #888888;
+}
+
+/* ─── 5. Rating Stars ────────────────────────────────────────────────────────── */
+.rating-stars-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stars-list-row {
+  display: flex;
+  gap: 2px;
+}
+
+.star-icon-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-icon-btn--interactive {
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+.star-icon-btn--interactive:hover {
+  transform: scale(1.15);
+}
+
+.star-numeric-lbl {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ─── 6. Status Badge ────────────────────────────────────────────────────────── */
+.status-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* Light / Dark Mode dynamic tinting */
+[data-theme="light"] .status-badge--watching      { background: rgba(59, 130, 246, 0.12); color: #2563eb; }
+[data-theme="light"] .status-badge--completed     { background: rgba(16, 185, 129, 0.12); color: #059669; }
+[data-theme="light"] .status-badge--plan_to_watch { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+[data-theme="light"] .status-badge--dropped       { background: rgba(239, 68, 68, 0.12);   color: #dc2626; }
+
+[data-theme="dark"] .status-badge--watching       { background: rgba(96, 165, 250, 0.16);  color: #60a5fa; }
+[data-theme="dark"] .status-badge--completed      { background: rgba(52, 211, 153, 0.16);  color: #34d399; }
+[data-theme="dark"] .status-badge--plan_to_watch  { background: rgba(251, 191, 36, 0.16);  color: #fbbf24; }
+[data-theme="dark"] .status-badge--dropped        { background: rgba(248, 113, 113, 0.16);  color: #f87171; }
+
+/* ─── 7. Genre Pills ────────────────────────────────────────────────────────── */
+.genres-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.genre-pill-chip {
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ─── 8. Progress Bar ───────────────────────────────────────────────────────── */
+.progress-bar-rail {
+  width: 100%;
+  background: var(--skeleton-base);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-brand);
+}
+
+.progress-bar-fill--animated {
+  transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── 9. Confirm Dialog Overlay ───────────────────────────────────────────────── */
+.dialog-backdrop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 11000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: dialog-fade-in 200ms ease-out;
+}
+
+@keyframes dialog-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dialog-card-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  width: 100%;
+  max-width: 320px;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: dialog-pop-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes dialog-pop-in {
+  from {
+    transform: scale(0.9) translateY(10px);
+  }
+  to {
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dialog-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dialog-description {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.dialog-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dialog-btn {
+  padding: 8px 16px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: background 150ms ease;
+}
+
+.dialog-btn--cancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.dialog-btn--cancel:hover {
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+.dialog-btn--primary {
+  background: var(--color-brand);
+  color: var(--text-on-brand);
+}
+
+.dialog-btn--danger {
+  background: var(--color-error);
+  color: #ffffff;
+}
+.dialog-btn--danger:hover {
+  opacity: 0.9;
+}

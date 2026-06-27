@@ -1,0 +1,109 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  padding: var(--space-6);
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+/* ─── Error Banner ─── */
+.login-error-banner {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  animation: slide-down var(--transition-base) ease forwards;
+}
+
+/* ─── Logo ─── */
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.login-logo-icon {
+  font-size: 52px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+}
+
+.login-logo-text {
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -1px;
+}
+
+/* ─── Tagline ─── */
+.login-tagline {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: calc(-1 * var(--space-2));
+  line-height: 1.5;
+}
+
+/* ─── Google Button ─── */
+.login-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: 14px 28px;
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition:
+    box-shadow var(--transition-base),
+    transform var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.login-google-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.14);
+  transform: translateY(-1px);
+}
+
+.login-google-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--card-shadow);
+}
+
+.login-google-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ─── Footer ─── */
+.login-footer {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 280px;
+}

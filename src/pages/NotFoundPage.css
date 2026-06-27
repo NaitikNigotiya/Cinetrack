@@ -1,0 +1,55 @@
+.not-found-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  text-align: center;
+  padding: var(--space-6);
+}
+
+.not-found-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.not-found-emoji {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.not-found-title {
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.not-found-message {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+
+.not-found-link {
+  margin-top: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-brand);
+  transition: opacity var(--transition-fast);
+}
+
+.not-found-link:hover {
+  opacity: 0.8;
+}
+
+/* Shared placeholder styles for stub pages */
+.page-placeholder {
+  padding: var(--space-6);
+  color: var(--text-primary);
+}
+
+.page-placeholder h1 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+}

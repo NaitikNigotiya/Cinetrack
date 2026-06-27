@@ -1,0 +1,358 @@
+/* ─── Pull To Refresh Layout ─────────────────────────────────────────────────── */
+.ptr-container {
+  position: relative;
+  transition: transform 150ms ease-out;
+  min-height: 100vh;
+}
+
+.ptr-indicator {
+  position: absolute;
+  top: -48px;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+}
+
+.ptr-indicator--visible {
+  opacity: 1;
+  transform: translateY(48px);
+}
+
+.ptr-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--color-brand);
+  border-radius: 50%;
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Home Header & Logo Wordmark ────────────────────────────────────────────── */
+.home-header {
+  padding: 16px 16px 8px;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.home-top-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.home-logo-wordmark {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-logo-highlight {
+  color: var(--color-brand);
+}
+
+.home-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-elevated);
+}
+
+.home-settings-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
+}
+.home-settings-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.home-greeting-title {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+}
+
+/* ─── Quick Stats Strip ──────────────────────────────────────────────────────── */
+.stats-strip-container {
+  padding: 0 16px;
+}
+
+.stats-strip {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 8px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.stats-strip-item {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.stats-strip-val {
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: var(--color-brand);
+}
+
+.stats-strip-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.stats-strip-divider {
+  width: 1.5px;
+  height: 16px;
+  background: var(--border-default);
+}
+
+/* ─── Continue Watching Card (140x200px poster focus) ────────────────────────── */
+.continue-card-v2 {
+  flex-shrink: 0;
+  width: 140px;
+  height: 200px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+}
+
+.continue-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.continue-no-poster-v2 {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+.continue-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+}
+
+.continue-absolute-title {
+  position: absolute;
+  bottom: 12px;
+  left: 10px;
+  right: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.continue-episode-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  color: var(--color-brand);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.continue-bottom-bar-bg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.continue-bottom-bar-fg {
+  height: 100%;
+  background: var(--color-brand);
+  transition: width 300ms ease;
+}
+
+/* ─── Generic Section rails ────────────────────────────────────────────────── */
+.home-section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.home-see-all-link {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-brand);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--transition-fast) ease;
+}
+.home-see-all-link:hover {
+  opacity: 0.8;
+}
+
+/* 🍿 Quick Add Button overlay on trending cards */
+.trending-poster-wrapper {
+  position: relative;
+  width: 100px;
+  height: 150px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.trending-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trending-quick-add-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+.trending-quick-add-btn:hover {
+  background: var(--color-brand);
+  color: #000;
+  transform: scale(1.1);
+}
+
+.trending-quick-add-btn--added {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+}
+.trending-quick-add-btn--added:hover {
+  background: var(--color-success);
+  color: #fff;
+}
+
+/* ─── New Releases Grid (2-column layout) ────────────────────────────────────── */
+.releases-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.release-grid-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+}
+
+.release-poster-box {
+  position: relative;
+  aspect-ratio: 2/3;
+  background: var(--bg-elevated);
+}
+
+.release-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.release-badge-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.release-card-details {
+  padding: 8px 10px 10px;
+}
+
+.release-card-title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.release-card-subtitle {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ─── Bottom spacing so nav doesn't overlap ─── */
+.home-bottom-spacing {
+  height: calc(var(--bottom-nav-height) + var(--safe-bottom) + 24px);
+}

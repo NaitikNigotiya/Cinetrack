@@ -1,0 +1,168 @@
+/* ─── LIGHT THEME (IMDb-inspired) ─── */
+:root {
+  /* Backgrounds */
+  --bg-primary: #F5F5F1;
+  --bg-secondary: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-overlay: rgba(0, 0, 0, 0.05);
+
+  /* Brand */
+  --color-brand: #F5C518;
+  --color-brand-dim: #D4A90D;
+  --color-brand-text: #000000;
+
+  /* Text */
+  --text-primary: #1A1A1A;
+  --text-secondary: #555555;
+  --text-muted: #8A8A8A;
+  --text-inverse: #FFFFFF;
+  --text-on-brand: #000000;
+
+  /* Borders */
+  --border-default: #E0DFD8;
+  --border-strong: #BDBCB4;
+  --border-brand: #F5C518;
+
+  /* States */
+  --color-success: #1A8A1A;
+  --color-warning: #C47A00;
+  --color-error: #C0392B;
+  --color-info: #1A6FA8;
+
+  /* Status badges */
+  --status-watching: #1A6FA8;
+  --status-completed: #1A8A1A;
+  --status-plan: #C47A00;
+  --status-dropped: #C0392B;
+
+  /* Navigation */
+  --nav-bg: #FFFFFF;
+  --nav-border: #E0DFD8;
+  --nav-active: #F5C518;
+  --nav-inactive: #8A8A8A;
+
+  /* Components */
+  --card-bg: #FFFFFF;
+  --card-border: #E0DFD8;
+  --card-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  --input-bg: #FFFFFF;
+  --input-border: #BDBCB4;
+  --input-focus: #F5C518;
+  --skeleton-base: #EBEBEB;
+  --skeleton-shine: #F5F5F5;
+
+  /* Rating stars */
+  --star-filled: #F5C518;
+  --star-empty: #D0CFC8;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, sans-serif;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 30px;
+  --text-3xl: 36px;
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 350ms ease;
+
+  /* Bottom nav safe area */
+  --bottom-nav-height: 64px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── DARK THEME (Netflix-inspired) ─── */
+[data-theme="dark"] {
+  --bg-primary: #141414;
+  --bg-secondary: #1F1F1F;
+  --bg-elevated: #2A2A2A;
+  --bg-overlay: rgba(255, 255, 255, 0.06);
+
+  --color-brand: #E50914;
+  --color-brand-dim: #B0070F;
+  --color-brand-text: #FFFFFF;
+
+  --text-primary: #E8E8E8;
+  --text-secondary: #AAAAAA;
+  --text-muted: #666666;
+  --text-inverse: #1A1A1A;
+  --text-on-brand: #FFFFFF;
+
+  --border-default: #2A2A2A;
+  --border-strong: #3A3A3A;
+  --border-brand: #E50914;
+
+  --color-success: #2ECC71;
+  --color-warning: #F5A623;
+  --color-error: #FF4757;
+  --color-info: #00B4D8;
+
+  --status-watching: #00B4D8;
+  --status-completed: #2ECC71;
+  --status-plan: #F5A623;
+  --status-dropped: #FF4757;
+
+  --nav-bg: #1A1A1A;
+  --nav-border: #2A2A2A;
+  --nav-active: #E50914;
+  --nav-inactive: #666666;
+
+  --card-bg: #1F1F1F;
+  --card-border: #2A2A2A;
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  --input-bg: #2A2A2A;
+  --input-border: #3A3A3A;
+  --input-focus: #E50914;
+  --skeleton-base: #2A2A2A;
+  --skeleton-shine: #333333;
+
+  --star-filled: #F5C518;
+  --star-empty: #3A3A3A;
+}
+
+/* ─── GLOBAL RESETS ─── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: var(--font-family);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background var(--transition-slow), color var(--transition-slow);
+}
+img { display: block; max-width: 100%; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+input, textarea { font-family: inherit; }
+
+/* ─── UTILITY CLASSES ─── */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+.visually-hidden { visibility: hidden; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
