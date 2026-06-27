@@ -11,6 +11,15 @@
     <meta name="apple-mobile-web-app-title" content="CineTrack" />
     <link rel="manifest" href="/manifest.json" />
 
+    <script>
+      (function() {
+        var theme = localStorage.getItem('cinetrack-theme') || 'system';
+        var isDark = theme === 'dark' || 
+          (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      })();
+    </script>
+
     <!-- Inter from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

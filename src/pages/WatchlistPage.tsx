@@ -260,6 +260,19 @@ export default function WatchlistPage() {
   const navigate = useNavigate()
   const { entries, isLoading, total, totalRuntime, updateEntry, removeEntry } = useWatchlist()
 
+  if (isLoading) {
+    return (
+      <div style={{ padding: '16px' }}>
+        <div className="skeleton" style={{ height: 24, width: '60%', marginBottom: 16 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 'var(--radius-md)' }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [activeTab,         setActiveTab]         = useState<TabKey>('all')
   const [viewMode,          setViewMode]          = useState<ViewMode>('grid')

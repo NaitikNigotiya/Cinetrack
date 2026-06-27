@@ -242,7 +242,18 @@ export default function HomePage() {
       <main className="home-body" style={{ marginTop: 16 }}>
 
         {/* 1. Continue Watching */}
-        {continueWatching.length > 0 && (
+        {isWatchlistLoading ? (
+          <section aria-label="Loading Continue Watching">
+            <div className="home-section-header-row">
+              <h2 className="home-section-title" style={{ margin: 0 }}>Continue Watching</h2>
+            </div>
+            <div className="home-rail">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="skeleton" style={{ width: 140, height: 200, borderRadius: 'var(--radius-md)' }} />
+              ))}
+            </div>
+          </section>
+        ) : continueWatching.length > 0 ? (
           <section aria-label="Continue Watching">
             <div className="home-section-header-row">
               <h2 className="home-section-title" style={{ margin: 0 }}>Continue Watching</h2>
@@ -287,7 +298,7 @@ export default function HomePage() {
               })}
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* 2. Recently Added */}
         <section aria-label="Recently Added">

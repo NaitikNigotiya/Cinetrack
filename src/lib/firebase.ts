@@ -1,8 +1,8 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import {
-  getFirestore,
-  enableMultiTabIndexedDbPersistence,
+  initializeFirestore,
+  persistentMultipleTabManager,
 } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
@@ -23,19 +23,11 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 // ─── Service Exports ──────────────────────────────────────────────────────────
 
 export const auth           = getAuth(app)
-export const db             = getFirestore(app)
+export const db             = initializeFirestore(app, {
+  localCache: persistentMultipleTabManager()
+})
 export const storage        = getStorage(app)
 export const googleProvider = new GoogleAuthProvider()
-
-// ─── Offline Persistence ──────────────────────────────────────────────────────
-
-enableMultiTabIndexedDbPersistence(db).catch((err: { code: string }) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('[CineTrack] Firestore persistence: multiple tabs open — active in first tab only.')
-  } else if (err.code === 'unimplemented') {
-    console.warn('[CineTrack] Firestore persistence: browser does not support IndexedDB.')
-  }
-})
 
 // ─── Collection Paths ─────────────────────────────────────────────────────────
 
