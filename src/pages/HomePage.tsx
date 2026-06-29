@@ -88,14 +88,16 @@ export default function HomePage() {
   const { entries, addEntry, isLoading: isWatchlistLoading } = useWatchlist()
   const { data: analytics } = useAnalytics()
 
+  const currentYear = new Date().getFullYear()
+
   const [historyList, setHistoryList] = useState<WatchHistoryEntry[]>([])
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [goal, setGoal] = useState<number>(() => {
-    const saved = localStorage.getItem('cinetrack-watch-goal-2025')
-    return saved ? parseInt(saved, 10) : 200
+  const [watchGoal, setWatchGoal] = useState<number>(() => {
+    const saved = localStorage.getItem(`cinetrack-watch-goal-${currentYear}`)
+    return saved ? parseInt(saved, 10) : 100
   })
   const [isEditingGoal, setIsEditingGoal] = useState(false)
-  const [tempGoal, setTempGoal] = useState(String(goal))
+  const [goalInput, setGoalInput] = useState(String(watchGoal))
   const [mood, setMood] = useState<string | null>(() => localStorage.getItem('cinetrack-mood'))
 
   // Clock
@@ -211,6 +213,18 @@ export default function HomePage() {
   const completedMoviesCount = useMemo(() => entries.filter((e) => e.type === 'movie' && e.status === 'completed').length, [entries])
   const completedTVCount = useMemo(() => entries.filter((e) => e.type === 'tv' && e.status === 'completed').length, [entries])
 
+  const moviesWatchedThisYear = useMemo(() => {
+    return entries.filter(e =>
+      e.type === 'movie' &&
+      e.status === 'completed' &&
+      e.watchDates?.some((date: string) =>
+        new Date(date).getFullYear() === currentYear
+      )
+    ).length
+  }, [entries, currentYear])
+
+  const moviesWatchedCount = moviesWatchedThisYear || completedMoviesCount
+
   const quickStats = useMemo(() => [
     { id: 'movies', icon: <Clapperboard size={24} />, val: completedMoviesCount, label: 'Movies' },
     { id: 'tv', icon: <Tv size={24} />, val: completedTVCount, label: 'TV Shows' },
@@ -258,19 +272,18 @@ export default function HomePage() {
   }, [])
 
   // Goal ring
-  const RING_R = 54
-  const RING_C = 2 * Math.PI * RING_R
-  const goalPct = goal > 0 ? Math.min(100, Math.round((completedMoviesCount / goal) * 100)) : 0
-  const ringOffset = RING_C * (1 - goalPct / 100)
+  const goalPercent = watchGoal > 0
+    ? Math.min(Math.round((moviesWatchedCount / watchGoal) * 100), 100)
+    : 0
 
-  const handleSaveGoal = useCallback(() => {
-    const val = parseInt(tempGoal, 10)
+  const saveGoal = useCallback(() => {
+    const val = parseInt(goalInput, 10)
     if (!isNaN(val) && val > 0) {
-      setGoal(val)
-      localStorage.setItem('cinetrack-watch-goal-2025', String(val))
+      setWatchGoal(val)
+      localStorage.setItem(`cinetrack-watch-goal-${currentYear}`, String(val))
     }
     setIsEditingGoal(false)
-  }, [tempGoal])
+  }, [goalInput, currentYear])
 
   const handleMoodSelect = (name: string) => {
     const next = mood === name ? null : name
@@ -517,65 +530,117 @@ export default function HomePage() {
         {/* ── RIGHT COLUMN (WIDGETS) ─────────────────────────────────────────── */}
         <aside className="dashboard-right">
 
-          {/* WIDGET 1 — WATCH GOAL 2025 */}
-          <section className="hp-widget">
-            <div className="hp-widget-header">
-              <h3 className="hp-widget-title">Watch Goal 2025</h3>
-              {isEditingGoal
-                ? <button className="hp-widget-action" onClick={handleSaveGoal}>Save</button>
-                : <button className="hp-widget-action" onClick={() => { setTempGoal(String(goal)); setIsEditingGoal(true) }}>Edit Goal</button>}
+          {/* WIDGET 1 — WATCH GOAL */}
+          <div style={{
+            background: 'var(--card-bg)', border: '1px solid var(--card-border)',
+            borderRadius: 'var(--radius-lg)', padding: '16px', marginBottom: '16px',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between',
+              alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 700,
+                color: 'var(--text-primary)' }}>
+                Watch Goal {currentYear}
+              </span>
+              <button onClick={() => { setIsEditingGoal(true); setGoalInput(String(watchGoal)) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: '13px', fontWeight: 600, color: 'var(--color-brand)' }}>
+                Edit Goal
+              </button>
             </div>
-            <div className="hp-goal-content">
-              <div className="hp-ring-wrap">
-                <svg width="140" height="140" viewBox="0 0 140 140" className="hp-ring-svg">
-                  <circle cx="70" cy="70" r={RING_R} fill="none" stroke="var(--border-default)" strokeWidth="10" />
-                  <circle
-                    cx="70" cy="70" r={RING_R}
-                    fill="none"
-                    stroke="var(--color-brand)"
-                    strokeWidth="10"
-                    strokeDasharray={RING_C}
-                    strokeDashoffset={ringOffset}
-                    strokeLinecap="round"
-                    transform="rotate(-90 70 70)"
-                    style={{ transition: 'stroke-dashoffset 800ms ease' }}
-                  />
-                </svg>
-                <div className="hp-ring-center">
-                  <span className="hp-ring-pct">{goalPct}%</span>
+
+            {/* SVG Ring */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                {/* Track */}
+                <circle cx="70" cy="70" r="54"
+                  fill="none" stroke="var(--border-default)" strokeWidth="10" />
+                {/* Progress arc */}
+                <circle cx="70" cy="70" r="54"
+                  fill="none"
+                  stroke="var(--color-brand)"
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 54}`}
+                  strokeDashoffset={`${2 * Math.PI * 54 * (1 - goalPercent / 100)}`}
+                  transform="rotate(-90 70 70)"
+                  style={{ transition: 'stroke-dashoffset 800ms ease' }}
+                />
+                {/* Center text */}
+                <text x="70" y="70" textAnchor="middle" dominantBaseline="middle"
+                  style={{ fontSize: '22px', fontWeight: 800,
+                    fill: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                  {goalPercent}%
+                </text>
+              </svg>
+            </div>
+
+            {/* Stats */}
+            {isEditingGoal ? (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  autoFocus
+                  type="number"
+                  value={goalInput}
+                  onChange={e => setGoalInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveGoal()}
+                  min="1" max="999"
+                  style={{
+                    flex: 1, padding: '8px 12px',
+                    background: 'var(--input-bg)', border: '1px solid var(--input-focus)',
+                    borderRadius: 'var(--radius-md)', color: 'var(--text-primary)',
+                    fontSize: '14px', fontWeight: 600,
+                  }}
+                  placeholder="Set your goal..."
+                />
+                <button onClick={saveGoal} style={{
+                  padding: '8px 14px', background: 'var(--color-brand)',
+                  color: 'var(--text-on-brand)', border: 'none',
+                  borderRadius: 'var(--radius-md)', fontWeight: 700,
+                  fontSize: '13px', cursor: 'pointer',
+                }}>Save</button>
+                <button onClick={() => setIsEditingGoal(false)} style={{
+                  padding: '8px 10px', background: 'var(--bg-elevated)',
+                  color: 'var(--text-muted)', border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-md)', fontSize: '13px', cursor: 'pointer',
+                }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 700,
+                    color: 'var(--text-primary)' }}>
+                    {watchGoal} Movies
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Goal</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 700,
+                    color: 'var(--color-brand)' }}>
+                    {moviesWatchedCount} Movies
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Watched</span>
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {watchGoal - moviesWatchedCount > 0
+                    ? `${watchGoal - moviesWatchedCount} to go!`
+                    : '🎉 Goal achieved!'}
+                </div>
+
+                {/* Progress bar below stats */}
+                <div style={{ marginTop: '8px', height: '4px',
+                  background: 'var(--skeleton-base)', borderRadius: '999px', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', background: 'var(--color-brand)',
+                    borderRadius: '999px', width: `${goalPercent}%`,
+                    transition: 'width 800ms ease',
+                  }} />
                 </div>
               </div>
-              {isEditingGoal ? (
-                <div className="hp-goal-edit">
-                  <input
-                    type="number" min={1} max={999}
-                    value={tempGoal}
-                    onChange={(e) => setTempGoal(e.target.value)}
-                    onBlur={handleSaveGoal}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveGoal()}
-                    className="hp-goal-input"
-                    autoFocus
-                  />
-                  <span className="hp-goal-input-label">Movies Goal</span>
-                </div>
-              ) : (
-                <div className="hp-goal-stats">
-                  <div className="hp-goal-row">
-                    <strong className="hp-goal-num">{goal} Movies</strong>
-                    <span className="hp-goal-lbl">Goal</span>
-                  </div>
-                  <div className="hp-goal-row">
-                    <strong className="hp-goal-num hp-goal-num--brand">{completedMoviesCount} Movies</strong>
-                    <span className="hp-goal-lbl">Watched</span>
-                  </div>
-                  <div className="hp-goal-row">
-                    <strong className="hp-goal-num hp-goal-num--muted">{Math.max(0, goal - completedMoviesCount)} to go!</strong>
-                    <span className="hp-goal-lbl" />
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
+            )}
+          </div>
 
           {/* WIDGET 2 — MOOD FOR TODAY */}
           <section className="hp-widget">
