@@ -101,7 +101,13 @@ export default function WatchingPage() {
           currentEntries.map(entry => (
             <div
               key={entry.titleId}
-              onClick={() => navigate(`/title/${entry.titleId}`)}
+              onClick={() => {
+                if (entry.type === 'tv') {
+                  navigate(`/title/${entry.titleId}/episodes`)
+                } else {
+                  navigate(`/title/${entry.titleId}`)
+                }
+              }}
               style={{
                 display: 'flex', alignItems: 'center', gap: '16px',
                 background: 'var(--card-bg)', border: '1px solid var(--card-border)',
@@ -125,7 +131,9 @@ export default function WatchingPage() {
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
                   {entry.type === 'tv' 
-                    ? `${entry.episodesWatched} of ${entry.totalEpisodes} episodes`
+                    ? (entry.totalEpisodes > 0
+                      ? `${entry.episodesWatched} of ${entry.totalEpisodes} episodes`
+                      : `${entry.episodesWatched} episodes watched`)
                     : `${entry.totalRuntime} min`}
                 </div>
                 {/* Progress bar */}
@@ -135,15 +143,29 @@ export default function WatchingPage() {
                     height: '100%', borderRadius: '999px',
                     background: 'var(--color-brand)',
                     width: entry.type === 'tv'
-                      ? `${Math.round((entry.episodesWatched / entry.totalEpisodes) * 100)}%`
+                      ? (entry.totalEpisodes > 0
+                        ? `${Math.round((entry.episodesWatched / entry.totalEpisodes) * 100)}%`
+                        : '0%')
                       : '0%',
                   }} />
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  {entry.type === 'tv' && entry.totalEpisodes > 0 && (
+                    `Next: Episode ${(entry.episodesWatched || 0) + 1}`
+                  )}
                 </div>
               </div>
 
               {/* Continue button */}
               <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/title/${entry.titleId}`); }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (entry.type === 'tv') {
+                    navigate(`/title/${entry.titleId}/episodes`)
+                  } else {
+                    navigate(`/title/${entry.titleId}`)
+                  }
+                }}
                 style={{
                   padding: '8px 16px', background: 'var(--color-brand)',
                   color: 'var(--text-on-brand)', border: 'none',

@@ -13,6 +13,7 @@ import {
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
 import { getImageUrl } from '@/lib/tmdb'
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { PosterCard } from '@/components/ui/PosterCard'
 
 import type { WatchlistEntry, WatchStatus } from '@/types/app'
 import './WatchlistPage.css'
@@ -347,37 +348,20 @@ export default function WatchlistPage() {
 
               {/* Grid block */}
               {filteredAndSortedList.length > 0 ? (
-                <div className="wl-status-grid">
-                  {filteredAndSortedList.map((e) => {
-                    const poster = getImageUrl(e.posterPath, 'w500')
-                    return (
-                      <article
-                        key={e.titleId}
-                        className="wl-grid-card"
-                        onClick={() => navigate(`/title/${e.titleId}`)}
-                      >
-                        <div className="wl-grid-poster-wrap">
-                          {poster ? (
-                            <img src={poster} alt={e.title} className="wl-grid-poster-img" loading="lazy" />
-                          ) : (
-                            <div className="wl-grid-no-poster"><Film size={24} /></div>
-                          )}
-                          <div className="wl-grid-overlay" />
-                          <span
-                            className="wl-grid-status-badge"
-                            style={{ background: STATUS_COLORS[e.status] }}
-                          >
-                            {STATUS_LABELS[e.status]}
-                          </span>
-                          {e.rating && <span className="wl-grid-rating-badge">⭐ {e.rating}</span>}
-                        </div>
-                        <div className="wl-grid-info">
-                          <p className="wl-grid-card-title">{e.title}</p>
-                          <p className="wl-grid-card-year">{e.year > 0 ? e.year : '—'}</p>
-                        </div>
-                      </article>
-                    )
-                  })}
+                <div className="poster-grid">
+                  {filteredAndSortedList.map((entry) => (
+                    <PosterCard
+                      key={entry.titleId}
+                      title={entry.title}
+                      year={entry.year}
+                      posterPath={entry.posterPath}
+                      rating={entry.rating}
+                      type={entry.type}
+                      status={entry.status}
+                      isFavorite={entry.isFavorite}
+                      onClick={() => navigate(`/title/${entry.titleId}`)}
+                    />
+                  ))}
                 </div>
               ) : (
                 <p className="wl-tab-empty-msg">No titles match this watch status filter.</p>

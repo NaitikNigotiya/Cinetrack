@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import {
   collection,
@@ -15,26 +15,16 @@ import {
 } from 'firebase/firestore'
 import {
   Calendar as CalendarIcon,
-  Clock,
   Film,
-  Plus,
-  Trash2,
-  X,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
 } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/useAuth'
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
 import { db, COLLECTIONS } from '@/lib/firebase'
-import { getMovieDetails, getTVDetails, getImageUrl } from '@/lib/tmdb'
-import { useSearch } from '@/features/search/hooks/useSearch'
+import { getMovieDetails, getTVDetails, getImageUrl, searchMulti } from '@/lib/tmdb'
 import { deleteHistoryEvent } from '@/features/history/history'
+import { usePlannedWatches } from '@/features/calendar/usePlannedWatches'
 
-import { BottomSheet } from '@/components/ui/BottomSheet'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useToast } from '@/components/ui/Toast'
 
 import type { WatchHistoryEntry, MediaType } from '@/types/app'
@@ -43,12 +33,6 @@ import type { TMDbMovie, TMDbTV } from '@/types/tmdb'
 import './CalendarPage.css'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
-
-interface WatchGoal {
-  id: string
-  text: string
-  completed: boolean
-}
 
 interface UpcomingReleaseItem {
   titleId: string
@@ -76,13 +60,6 @@ function getLocalDateString(dateInput: any): string {
   const mm = String(date.getMonth() + 1).padStart(2, '0')
   const dd = String(date.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
-}
-
-/**
- * Returns helper dates for Calendar.
- */
-function getMonthYearLabel(date: Date): string {
-  return date.toLocaleString('default', { month: 'long', year: 'numeric' })
 }
 
 /**
@@ -252,6 +229,432 @@ export function UpcomingReleases({ limit = 10, showHeader = true }: { limit?: nu
   )
 }
 
+function DayDetailContent({
+  selectedDay,
+  dayLogs,
+  plannedItems,
+  onClose,
+  onAddWatch,
+  onAddPlan,
+  onDeleteLog,
+  onDeletePlan,
+  getPosterUrl,
+}: {
+  selectedDay: Date
+  dayLogs: any[]
+  plannedItems: any[]
+  onClose: () => void
+  onAddWatch: () => void
+  onAddPlan: () => void
+  onDeleteLog: (id: string) => void
+  onDeletePlan: (id: string) => void
+  getPosterUrl: (titleId: string) => string | null
+}) {
+  const isPast = selectedDay <= new Date()
+  const isToday = selectedDay.toDateString() === new Date().toDateString()
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between',
+        alignItems: 'flex-start', marginBottom: '16px' }}>
+        <div>
+          <h3 style={{ fontSize: '16px', fontWeight: 700,
+            color: 'var(--text-primary)', margin: 0 }}>
+            {selectedDay.toLocaleDateString('en-US', {
+              weekday: 'long', month: 'long', day: 'numeric'
+            })}
+          </h3>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            {isToday ? '📅 Today'
+              : isPast ? '✅ Past date'
+              : '🔮 Upcoming'}
+          </div>
+        </div>
+        <button onClick={onClose} style={{
+          background: 'none', border: 'none',
+          color: 'var(--text-muted)', cursor: 'pointer',
+          fontSize: '18px', lineHeight: 1,
+        }}>✕</button>
+      </div>
+
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        {(isPast || isToday) && (
+          <button onClick={onAddWatch} style={{
+            flex: 1, padding: '9px', border: 'none', cursor: 'pointer',
+            background: 'var(--color-brand)', color: 'var(--text-on-brand)',
+            borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            ✓ Log Watch
+          </button>
+        )}
+        {!isPast && (
+          <button onClick={onAddPlan} style={{
+            flex: 1, padding: '9px', border: '1px solid #00B4D8', cursor: 'pointer',
+            background: 'rgba(0,180,216,0.1)', color: '#00B4D8',
+            borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            📅 Plan Watch
+          </button>
+        )}
+        {isToday && (
+          <button onClick={onAddPlan} style={{
+            flex: 1, padding: '9px', border: '1px solid #00B4D8', cursor: 'pointer',
+            background: 'rgba(0,180,216,0.1)', color: '#00B4D8',
+            borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            📅 Plan for Later
+          </button>
+        )}
+      </div>
+
+      {/* Watched section */}
+      {dayLogs.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px',
+            textTransform: 'uppercase', color: 'var(--color-brand)',
+            marginBottom: '10px' }}>
+            ✅ Watched ({dayLogs.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {dayLogs.map((log, idx) => {
+              const poster = getPosterUrl(log.titleId)
+              return (
+                <div key={idx} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 12px',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-default)',
+                  borderLeft: '3px solid var(--color-brand)',
+                  borderRadius: 'var(--radius-md)',
+                }}>
+                  {poster ? (
+                    <img
+                      src={poster}
+                      alt={log.title}
+                      style={{ width: 32, height: 48, borderRadius: 4,
+                        objectFit: 'cover', flexShrink: 0,
+                        background: 'var(--bg-overlay)' }}
+                    />
+                  ) : (
+                    <div style={{ width: 32, height: 48, borderRadius: 4,
+                      background: 'var(--bg-overlay)', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '16px' }}>🎬</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px',
+                      color: 'var(--text-primary)', overflow: 'hidden',
+                      textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {log.title}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)',
+                      marginTop: '2px' }}>
+                      {log.episodeLabel && `${log.episodeLabel} · `}
+                      {log.runtimeMinutes && `${log.runtimeMinutes}m · `}
+                      {new Date(log.watchedAt instanceof Date ? log.watchedAt : (log.watchedAt as any)?.toDate ? (log.watchedAt as any).toDate() : log.watchedAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit', minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                  <button onClick={() => onDeleteLog(log.id)} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--text-muted)', fontSize: '14px', flexShrink: 0,
+                    padding: '4px',
+                  }}>🗑️</button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Planned section */}
+      {plannedItems.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px',
+            textTransform: 'uppercase', color: '#00B4D8',
+            marginBottom: '10px' }}>
+            📅 Planned ({plannedItems.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {plannedItems.map((plan) => {
+              const planPoster = plan.posterPath ? getImageUrl(plan.posterPath, 'w200') : null
+              return (
+                <div key={plan.id} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 12px',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-default)',
+                  borderLeft: '3px solid #00B4D8',
+                  borderRadius: 'var(--radius-md)',
+                }}>
+                  {planPoster ? (
+                    <img
+                      src={planPoster}
+                      alt={plan.title}
+                      style={{ width: 32, height: 48, borderRadius: 4,
+                        objectFit: 'cover', flexShrink: 0,
+                        background: 'var(--bg-overlay)' }}
+                    />
+                  ) : (
+                    <div style={{ width: 32, height: 48, borderRadius: 4,
+                      background: 'var(--bg-overlay)', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '16px' }}>🎬</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px',
+                      color: 'var(--text-primary)', overflow: 'hidden',
+                      textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {plan.title}
+                    </div>
+                    {plan.note && (
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)',
+                        marginTop: '2px', overflow: 'hidden',
+                        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {plan.note}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => onDeletePlan(plan.id)} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--text-muted)', fontSize: '14px',
+                    padding: '4px', flexShrink: 0,
+                  }}>🗑️</button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {dayLogs.length === 0 && plannedItems.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '32px 0',
+          color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📭</div>
+          <div style={{ fontSize: '14px' }}>Nothing logged for this day</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AddWatchModal({ date, mode, onClose, onAdd }: {
+  date: Date
+  mode: 'watched' | 'planned'
+  onClose: () => void
+  onAdd: (result: any, note: string, targetDate: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<any[]>([])
+  const [selected, setSelected] = useState<any>(null)
+  const [note, setNote] = useState('')
+  const [targetDate, setTargetDate] = useState(() => {
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  })
+  const [isSearching, setIsSearching] = useState(false)
+
+  const handleSearch = async (q: string) => {
+    setQuery(q)
+    if (q.length < 2) { setResults([]); return }
+    setIsSearching(true)
+    try {
+      const res = await searchMulti(q)
+      setResults(res.results.filter((r: any) =>
+        r.media_type === 'movie' || r.media_type === 'tv'
+      ).slice(0, 8))
+    } catch (e) { console.error(e) }
+    finally { setIsSearching(false) }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 2000,
+      background: 'rgba(0,0,0,0.8)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '20px',
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxWidth: '480px',
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-xl)',
+        overflow: 'hidden',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+      }}>
+        {/* Header */}
+        <div style={{ padding: '20px', borderBottom: '1px solid var(--border-default)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700,
+            color: 'var(--text-primary)' }}>
+            {mode === 'watched' ? 'Log Watch' : 'Plan Watch'}
+          </h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none',
+            cursor: 'pointer', color: 'var(--text-muted)', fontSize: '18px' }}>✕</button>
+        </div>
+
+        <div style={{ padding: '20px' }}>
+          {/* Date picker */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600,
+              color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+              {mode === 'watched' ? 'Date Watched' : 'Planned Date'}
+            </label>
+            <input
+              type="date"
+              value={targetDate}
+              onChange={e => setTargetDate(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 12px',
+                background: 'var(--input-bg)', border: '1px solid var(--input-border)',
+                borderRadius: 'var(--radius-md)', color: 'var(--text-primary)',
+                fontSize: '14px', boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          {/* Search input */}
+          {!selected ? (
+            <div>
+              <label style={{ fontSize: '12px', fontWeight: 600,
+                color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                Search Title
+              </label>
+              <input
+                autoFocus
+                type="text"
+                value={query}
+                onChange={e => handleSearch(e.target.value)}
+                placeholder="Search movies, TV shows..."
+                style={{
+                  width: '100%', padding: '10px 12px',
+                  background: 'var(--input-bg)', border: '1px solid var(--input-border)',
+                  borderRadius: 'var(--radius-md)', color: 'var(--text-primary)',
+                  fontSize: '14px', boxSizing: 'border-box',
+                }}
+              />
+              {/* Results */}
+              {results.length > 0 && (
+                <div style={{ marginTop: '8px', border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-md)', overflow: 'hidden',
+                  maxHeight: '280px', overflowY: 'auto' }}>
+                  {results.map(r => (
+                    <div key={r.id} onClick={() => setSelected(r)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '10px 12px', cursor: 'pointer',
+                        borderBottom: '1px solid var(--border-default)',
+                        background: 'var(--bg-elevated)',
+                      }}
+                      onMouseEnter={e =>
+                        e.currentTarget.style.background = 'var(--bg-overlay)'}
+                      onMouseLeave={e =>
+                        e.currentTarget.style.background = 'var(--bg-elevated)'}
+                    >
+                      <img
+                        src={r.poster_path
+                          ? `https://image.tmdb.org/t/p/w200${r.poster_path}` : ''}
+                        alt={r.title || r.name}
+                        style={{ width: 32, height: 48, borderRadius: 4,
+                          objectFit: 'cover', background: 'var(--bg-overlay)' }}
+                        onError={e => { e.currentTarget.style.display = 'none' }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '14px',
+                          color: 'var(--text-primary)' }}>
+                          {r.title || r.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          {r.media_type === 'movie' ? '🎬 Movie' : '📺 TV Show'}
+                          {(r.release_date || r.first_air_date) &&
+                            ` · ${new Date(r.release_date || r.first_air_date).getFullYear()}`}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isSearching && (
+                <div style={{ textAlign: 'center', padding: '12px',
+                  color: 'var(--text-muted)', fontSize: '13px' }}>
+                  Searching...
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Selected title */
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px', background: 'var(--bg-elevated)',
+                borderRadius: 'var(--radius-md)', marginBottom: '12px',
+                border: '1px solid var(--color-brand)' }}>
+                <img
+                  src={selected.poster_path
+                    ? `https://image.tmdb.org/t/p/w200${selected.poster_path}` : ''}
+                  alt={selected.title || selected.name}
+                  style={{ width: 40, height: 60, borderRadius: 4, objectFit: 'cover' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px',
+                    color: 'var(--text-primary)' }}>
+                    {selected.title || selected.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-brand)',
+                    marginTop: '2px' }}>Selected ✓</div>
+                </div>
+                <button onClick={() => setSelected(null)} style={{
+                  background: 'none', border: 'none',
+                  cursor: 'pointer', color: 'var(--text-muted)',
+                }}>✕</button>
+              </div>
+
+              {/* Note field */}
+              <label style={{ fontSize: '12px', fontWeight: 600,
+                color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                Note (optional)
+              </label>
+              <input
+                type="text"
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                placeholder={mode === 'watched'
+                  ? 'e.g. Watched with friends' : 'e.g. Movie night plan'}
+                style={{
+                  width: '100%', padding: '10px 12px',
+                  background: 'var(--input-bg)', border: '1px solid var(--input-border)',
+                  borderRadius: 'var(--radius-md)', color: 'var(--text-primary)',
+                  fontSize: '14px', boxSizing: 'border-box', marginBottom: '16px',
+                }}
+              />
+
+              {/* Submit button */}
+              <button
+                onClick={() => { onAdd(selected, note, targetDate); onClose() }}
+                style={{
+                  width: '100%', padding: '12px',
+                  background: mode === 'watched' ? 'var(--color-brand)' : '#00B4D8',
+                  color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                  fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                {mode === 'watched' ? 'Log Watch' : 'Add to Plan'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── MAIN CALENDAR PAGE ───────────────────────────────────────────────────────
 
 export default function CalendarPage() {
@@ -260,15 +663,25 @@ export default function CalendarPage() {
   const { entries: watchlist, addEntry } = useWatchlist()
 
   // Views & Reference dates
-  const [selectedView, setSelectedView] = useState<'month' | 'week'>('month')
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date())
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [selectedDay, setSelectedDay] = useState<Date | null>(() => new Date())
 
-  // Search/Add watch dialog state
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const { results: searchResults, isLoading: isSearchLoading } = useSearch(searchQuery)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addMode, setAddMode] = useState<'watched' | 'planned'>('watched')
+  const { plannedWatches, addPlan, removePlan } = usePlannedWatches()
+
+  const plannedByDate = useMemo(() => {
+    const map: Record<string, any[]> = {}
+    plannedWatches.forEach(plan => {
+      const dateKey = plan.plannedDate
+      if (!map[dateKey]) {
+        map[dateKey] = []
+      }
+      map[dateKey]!.push(plan)
+    })
+    return map
+  }, [plannedWatches])
 
   // Firestore Watch History Sync
   const [historyList, setHistoryList] = useState<WatchHistoryEntry[]>([])
@@ -298,29 +711,6 @@ export default function CalendarPage() {
     return unsubscribe
   }, [user])
 
-  // Watch Goals State (localStorage)
-  const [goals, setGoals] = useState<WatchGoal[]>(() => {
-    const saved = localStorage.getItem('cinetrack-calendar-goals')
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error('[CineTrack] Load goals error:', e)
-      }
-    }
-    return [
-      { id: '1', text: 'Finish Breaking Bad', completed: false },
-      { id: '2', text: 'Watch Dune Series', completed: false },
-      { id: '3', text: 'Christopher Nolan Marathon', completed: false },
-    ]
-  })
-
-  const [isAddingGoal, setIsAddingGoal] = useState(false)
-  const [newGoalText, setNewGoalText] = useState('')
-
-  useEffect(() => {
-    localStorage.setItem('cinetrack-calendar-goals', JSON.stringify(goals))
-  }, [goals])
 
   // TMDB Queries for upcoming release cells inside Calendar Grid
   const ptw = useMemo(() => {
@@ -390,6 +780,7 @@ export default function CalendarPage() {
     return map
   }, [historyList])
 
+
   // Watchlist poster map for thumbnails
   const watchlistPosterMap = useMemo(() => {
     const map = new Map<string, string | null>()
@@ -399,11 +790,12 @@ export default function CalendarPage() {
     return map
   }, [watchlist])
 
-  // Navigation handlers
-  const handlePrev = () => {
+  const todayKey = new Date().toISOString().split('T')[0]
+
+  const prevMonth = () => {
     setCurrentDate((prev) => {
       const next = new Date(prev)
-      if (selectedView === 'month') {
+      if (viewMode === 'month') {
         next.setMonth(next.getMonth() - 1)
       } else {
         next.setDate(next.getDate() - 7)
@@ -412,10 +804,10 @@ export default function CalendarPage() {
     })
   }
 
-  const handleNext = () => {
+  const nextMonth = () => {
     setCurrentDate((prev) => {
       const next = new Date(prev)
-      if (selectedView === 'month') {
+      if (viewMode === 'month') {
         next.setMonth(next.getMonth() + 1)
       } else {
         next.setDate(next.getDate() + 7)
@@ -424,50 +816,11 @@ export default function CalendarPage() {
     })
   }
 
-  const handleToday = () => {
+  const goToToday = () => {
     const today = new Date()
     setCurrentDate(today)
-    setSelectedDate(today)
+    setSelectedDay(today)
   }
-
-  // Month days generation
-  const monthDaysGrid = useMemo(() => {
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
-
-    const firstDayIndex = new Date(year, month, 1).getDay() // 0 = Sunday
-    const daysInCurrentMonth = new Date(year, month + 1, 0).getDate()
-    const daysInPrevMonth = new Date(year, month, 0).getDate()
-
-    const grid: { date: Date; isCurrentMonth: boolean }[] = []
-
-    // Previous month padding
-    for (let i = firstDayIndex - 1; i >= 0; i--) {
-      grid.push({
-        date: new Date(year, month - 1, daysInPrevMonth - i),
-        isCurrentMonth: false,
-      })
-    }
-
-    // Current month
-    for (let i = 1; i <= daysInCurrentMonth; i++) {
-      grid.push({
-        date: new Date(year, month, i),
-        isCurrentMonth: true,
-      })
-    }
-
-    // Next month padding
-    let nextMonthDay = 1
-    while (grid.length % 7 !== 0) {
-      grid.push({
-        date: new Date(year, month + 1, nextMonthDay++),
-        isCurrentMonth: false,
-      })
-    }
-
-    return grid
-  }, [currentDate])
 
   // Week days generation
   const weekDaysGrid = useMemo(() => {
@@ -485,103 +838,33 @@ export default function CalendarPage() {
     return grid
   }, [currentDate])
 
-  // Selected date details
-  const selectedDateLabel = useMemo(() => {
-    if (!selectedDate) return ''
-    return selectedDate.toLocaleDateString(undefined, {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }, [selectedDate])
 
   const selectedDateWatches = useMemo(() => {
-    if (!selectedDate) return []
-    const key = getLocalDateString(selectedDate)
+    if (!selectedDay) return []
+    const key = getLocalDateString(selectedDay)
     return watchesByDateMap.get(key) || []
-  }, [selectedDate, watchesByDateMap])
+  }, [selectedDay, watchesByDateMap])
 
-  // Watch Goal Actions
-  const handleToggleGoal = (id: string) => {
-    setGoals((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, completed: !g.completed } : g))
-    )
-  }
-
-  const handleAddGoalSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newGoalText.trim()) return
-
-    const newGoal: WatchGoal = {
-      id: Math.random().toString(36).substring(2, 9),
-      text: newGoalText.trim(),
-      completed: false,
+  // Build calendar days array (with null for empty cells)
+  const calendarDays = useMemo(() => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    const firstDay = new Date(year, month, 1).getDay()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const days: (Date | null)[] = []
+    
+    for (let i = 0; i < firstDay; i++) days.push(null)
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push(new Date(year, month, d))
     }
-    setGoals((prev) => [...prev, newGoal])
-    setNewGoalText('')
-    setIsAddingGoal(false)
-    showToast('Goal added!', 'success')
-  }
+    while (days.length % 7 !== 0) days.push(null)
+    return days
+  }, [currentDate])
 
-  // Automatic Goal progress calculator
-  const getGoalProgress = useCallback(
-    (goalText: string, completed: boolean) => {
-      if (completed) return 100
-
-      // Match goal substring in watchlist
-      const cleanGoal = goalText.toLowerCase()
-      const match = watchlist.find((w) => {
-        const cleanTitle = w.title.toLowerCase()
-        return cleanGoal.includes(cleanTitle) || cleanTitle.includes(cleanGoal)
-      })
-
-      if (!match) return 0
-
-      if (match.type === 'tv') {
-        if (match.totalEpisodes > 0) {
-          return Math.round((match.episodesWatched / match.totalEpisodes) * 100)
-        }
-        return match.status === 'completed' ? 100 : 0
-      } else {
-        if (match.status === 'completed') return 100
-        if (match.status === 'watching') return 50
-        return 0
-      }
-    },
-    [watchlist],
-  )
-
-  const getGoalProgressMeta = useCallback(
-    (goalText: string, completed: boolean) => {
-      if (completed) return '100% (Completed)'
-
-      const cleanGoal = goalText.toLowerCase()
-      const match = watchlist.find((w) => {
-        const cleanTitle = w.title.toLowerCase()
-        return cleanGoal.includes(cleanTitle) || cleanTitle.includes(cleanGoal)
-      })
-
-      if (!match) return '0% (Manual)'
-
-      if (match.type === 'tv') {
-        const pct = match.totalEpisodes > 0
-          ? Math.round((match.episodesWatched / match.totalEpisodes) * 100)
-          : (match.status === 'completed' ? 100 : 0)
-        return `${match.episodesWatched}/${match.totalEpisodes || '?'} episodes (${pct}%)`
-      } else {
-        if (match.status === 'completed') return '100% (Completed)'
-        if (match.status === 'watching') return '50% (Watching)'
-        return '0% (Plan to Watch)'
-      }
-    },
-    [watchlist],
-  )
 
   // Firestore Add/Log watch integration
-  const handleAddWatch = async (title: string, titleId: string, type: MediaType, posterPath: string | null) => {
-    if (!user || !selectedDate) return
-    setIsSearchOpen(false)
+  const handleAddWatch = async (title: string, titleId: string, type: MediaType, posterPath: string | null, customDate?: string) => {
+    if (!user || (!selectedDay && !customDate)) return
 
     try {
       // 1. Add to watchlist if not present
@@ -630,10 +913,12 @@ export default function CalendarPage() {
         console.error('[CineTrack] Fetch runtime error:', e)
       }
 
-      // 3. Log into watchHistory at midday local on selectedDate to prevent timezone wraps
-      const logDate = new Date(selectedDate)
+      // 3. Log into watchHistory at midday local on selectedDate/customDate to prevent timezone wraps
+      const logDate = customDate ? new Date(customDate + 'T12:00:00') : new Date(selectedDay!)
       const now = new Date()
-      logDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
+      if (!customDate) {
+        logDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
+      }
       const watchedAtTimestamp = Timestamp.fromDate(logDate)
 
       const historyRef = collection(db, `users/${user.uid}/${COLLECTIONS.HISTORY}`)
@@ -662,8 +947,10 @@ export default function CalendarPage() {
     }
   }
 
-  const handleDeleteLog = async (item: WatchHistoryEntry) => {
+  const handleDeleteLog = async (id: string) => {
     if (!user) return
+    const item = historyList.find((h) => h.id === id)
+    if (!item) return
     try {
       await deleteHistoryEvent(
         user.uid,
@@ -680,6 +967,28 @@ export default function CalendarPage() {
     }
   }
 
+  const handleAddEntry = async (result: any, note: string, targetDate: string) => {
+    if (addMode === 'planned') {
+      await addPlan({
+        titleId: `${result.media_type}:${result.id}`,
+        title: result.title || result.name,
+        posterPath: result.poster_path,
+        type: result.media_type,
+        plannedDate: targetDate,
+        note,
+      })
+      showToast(`Planned watch for "${result.title || result.name}" successfully!`, 'success')
+    } else {
+      await handleAddWatch(
+        result.title || result.name,
+        `${result.media_type}:${result.id}`,
+        result.media_type,
+        result.poster_path,
+        targetDate
+      )
+    }
+  }
+
   // Format runtime Helper
   const formatRuntime = (mins: number) => {
     const hrs = Math.floor(mins / 60)
@@ -688,109 +997,193 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="calendar-page animate-fade-in">
-      <header className="calendar-header">
-        <div className="calendar-nav-group">
-          <button className="calendar-btn-nav" onClick={handlePrev} aria-label="Previous">
-            <ChevronLeft size={16} />
-          </button>
-          <h1 className="calendar-month-title">
-            {selectedView === 'month'
-              ? getMonthYearLabel(currentDate)
-              : `Week of ${weekDaysGrid[0]?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || ''}`}
-          </h1>
-          <button className="calendar-btn-nav" onClick={handleNext} aria-label="Next">
-            <ChevronRight size={16} />
-          </button>
-          <button className="calendar-btn-today" onClick={handleToday}>
-            Today
-          </button>
-        </div>
+    <div style={{
+      height: '100vh', display: 'flex', flexDirection: 'column',
+      overflow: 'hidden', boxSizing: 'border-box',
+    }}>
 
-        <div className="calendar-toggle-group">
-          <button
-            className={`calendar-btn-toggle ${selectedView === 'month' ? 'calendar-btn-toggle--active' : ''}`}
-            onClick={() => setSelectedView('month')}
-          >
-            Month
-          </button>
-          <button
-            className={`calendar-btn-toggle ${selectedView === 'week' ? 'calendar-btn-toggle--active' : ''}`}
-            onClick={() => setSelectedView('week')}
-          >
-            Week
-          </button>
-        </div>
-      </header>
+      {/* Page header — fixed at top */}
+      <div style={{
+        padding: '20px 24px 16px', flexShrink: 0,
+        borderBottom: '1px solid var(--border-default)',
+        background: 'var(--bg-primary)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between' }}>
+          
+          {/* Month navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button onClick={prevMonth} style={{
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1px solid var(--border-default)',
+              background: 'var(--bg-elevated)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-primary)', fontSize: '16px',
+            }}>‹</button>
+            <h2 style={{ fontSize: '20px', fontWeight: 800,
+              color: 'var(--text-primary)', margin: 0, minWidth: '160px',
+              textAlign: 'center' }}>
+              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h2>
+            <button onClick={nextMonth} style={{
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1px solid var(--border-default)',
+              background: 'var(--bg-elevated)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-primary)', fontSize: '16px',
+            }}>›</button>
+            <button onClick={goToToday} style={{
+              padding: '6px 14px', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-default)',
+              background: 'var(--bg-elevated)', cursor: 'pointer',
+              fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)',
+            }}>Today</button>
+          </div>
 
-      <div className="calendar-layout">
-        {/* Main Calendar View */}
-        <main className="calendar-main-col">
-          {selectedView === 'month' ? (
-            <div className="calendar-grid-container">
-              <div className="calendar-weekdays-header">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                  <span key={d} className="weekday-lbl">
-                    {d}
-                  </span>
+          {/* View toggle */}
+          <div style={{ display: 'flex', gap: '4px',
+            background: 'var(--bg-elevated)', padding: '3px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-default)' }}>
+            {['Month', 'Week'].map(v => (
+              <button key={v} onClick={() => setViewMode(v.toLowerCase() as 'month' | 'week')}
+                style={{
+                  padding: '5px 14px', borderRadius: 'calc(var(--radius-md) - 2px)',
+                  border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+                  background: viewMode === v.toLowerCase()
+                    ? 'var(--color-brand)' : 'transparent',
+                  color: viewMode === v.toLowerCase()
+                    ? 'var(--text-on-brand)' : 'var(--text-muted)',
+                }}>{v}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main body — calendar + optional side panel */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* Calendar grid area */}
+        <div style={{
+          flex: 1, overflowY: 'auto', overflowX: 'hidden',
+          padding: '0',
+        }}>
+          {viewMode === 'month' ? (
+            <>
+              {/* Day of week headers */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+                borderBottom: '1px solid var(--border-default)',
+                position: 'sticky', top: 0, background: 'var(--bg-primary)', zIndex: 1,
+              }}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} style={{
+                    padding: '10px 8px', textAlign: 'center',
+                    fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                  }}>{day}</div>
                 ))}
               </div>
 
-              <div className="calendar-days-grid">
-                {monthDaysGrid.map(({ date, isCurrentMonth }, idx) => {
-                  const key = getLocalDateString(date)
-                  const dayWatches = watchesByDateMap.get(key) || []
-                  const dayReleases = releasesByDateMap.get(key) || []
-                  const totalItems = dayWatches.length + dayReleases.length
+              {/* Calendar days grid */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+              }}>
+                {calendarDays.map((day, idx) => {
+                  if (!day) return (
+                    <div key={`empty-${idx}`} style={{
+                      minHeight: '80px', padding: '8px',
+                      borderRight: '1px solid var(--border-default)',
+                      borderBottom: '1px solid var(--border-default)',
+                      background: 'var(--bg-secondary)', opacity: 0.4,
+                    }} />
+                  )
 
-                  // Merge indicators
-                  const visiblePills = [
-                    ...dayWatches.map((w) => ({ type: 'watch' as const, title: w.title, id: w.id })),
-                    ...dayReleases.map((r) => ({ type: 'release' as const, title: r.title, id: r.titleId })),
-                  ].slice(0, 3)
+                  const dateKey = getLocalDateString(day)
+                  const dayWatched = watchesByDateMap.get(dateKey) || []
+                  const dayPlanned = plannedByDate[dateKey] || []
 
-                  const moreCount = totalItems - 3
-                  const isToday = getLocalDateString(new Date()) === key
+                  const isToday = dateKey === todayKey
+                  const isSelected = selectedDay && getLocalDateString(selectedDay) === dateKey
+                  const isCurrentMonth = day.getMonth() === currentDate.getMonth()
 
                   return (
                     <div
-                      key={idx}
-                      className={`calendar-day-cell ${!isCurrentMonth ? 'calendar-day-cell--other-month' : ''} ${
-                        isToday ? 'calendar-day-cell--today' : ''
-                      }`}
-                      onClick={() => {
-                        setSelectedDate(date)
-                        setIsDetailOpen(true)
+                      key={dateKey}
+                      onClick={() => setSelectedDay(day)}
+                      style={{
+                        minHeight: '80px', padding: '6px',
+                        borderRight: '1px solid var(--border-default)',
+                        borderBottom: '1px solid var(--border-default)',
+                        cursor: 'pointer', overflow: 'hidden',
+                        background: isSelected ? 'rgba(245, 197, 24, 0.1)'
+                          : 'var(--bg-primary)',
+                        outline: isSelected
+                          ? '2px solid var(--color-brand)' : 'none',
+                        outlineOffset: '-2px',
+                        opacity: isCurrentMonth ? 1 : 0.35,
+                        transition: 'background 150ms ease',
                       }}
+                      onMouseEnter={e =>
+                        !isSelected && (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                      onMouseLeave={e =>
+                        !isSelected && (e.currentTarget.style.background = 'var(--bg-primary)')}
                     >
-                      <div className="day-header">
-                        <span className="day-number">{date.getDate()}</span>
+                      {/* Day number */}
+                      <div style={{
+                        width: 24, height: 24, borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '12px', fontWeight: isToday ? 700 : 400,
+                        background: isToday ? 'var(--color-brand)' : 'transparent',
+                        color: isToday ? 'var(--text-on-brand)' : 'var(--text-muted)',
+                        marginLeft: 'auto', marginBottom: '4px',
+                      }}>
+                        {day.getDate()}
                       </div>
-                      <div className="day-pills-list">
-                        {visiblePills.map((pill, pIdx) => (
-                          <div
-                            key={pIdx}
-                            className={`day-pill ${pill.type === 'watch' ? 'day-pill--watch' : 'day-pill--release'}`}
-                            title={pill.title}
-                          >
-                            {pill.title}
-                          </div>
-                        ))}
-                        {moreCount > 0 && <span className="day-pill-more">+{moreCount} more</span>}
-                      </div>
+
+                      {/* Activity pills */}
+                      {dayWatched.slice(0, 3).map((log, i) => (
+                        <div key={`w-${i}`} style={{
+                          fontSize: '10px', fontWeight: 600,
+                          padding: '1px 5px', marginBottom: '2px',
+                          borderRadius: '3px',
+                          background: 'rgba(229,9,20,0.15)',
+                          color: '#E50914',
+                          overflow: 'hidden', textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap', lineHeight: '16px',
+                        }}>• {log.title}</div>
+                      ))}
+                      {dayPlanned.slice(0, Math.max(0, 3 - dayWatched.length)).map((plan, i) => (
+                        <div key={`p-${i}`} style={{
+                          fontSize: '10px', fontWeight: 600,
+                          padding: '1px 5px', marginBottom: '2px',
+                          borderRadius: '3px',
+                          background: 'rgba(0,180,216,0.15)',
+                          color: '#00B4D8',
+                          overflow: 'hidden', textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap', lineHeight: '16px',
+                        }}>📅 {plan.title}</div>
+                      ))}
+                      {(dayWatched.length + dayPlanned.length) > 3 && (
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)',
+                          padding: '0 4px' }}>
+                          +{dayWatched.length + dayPlanned.length - 3} more
+                        </div>
+                      )}
                     </div>
                   )
                 })}
               </div>
-            </div>
+            </>
           ) : (
-            // Week View Layout
+            /* Week View Layout */
             <div className="calendar-week-grid">
               {weekDaysGrid.map((date, idx) => {
                 const key = getLocalDateString(date)
                 const dayWatches = watchesByDateMap.get(key) || []
                 const dayReleases = releasesByDateMap.get(key) || []
                 const isToday = getLocalDateString(new Date()) === key
+                const isSelected = selectedDay && getLocalDateString(selectedDay) === key
 
                 const dayName = date.toLocaleDateString(undefined, { weekday: 'short' })
 
@@ -799,8 +1192,11 @@ export default function CalendarPage() {
                     key={idx}
                     className={`week-column ${isToday ? 'week-column--today' : ''}`}
                     onClick={() => {
-                      setSelectedDate(date)
-                      setIsDetailOpen(true)
+                      setSelectedDay(date)
+                    }}
+                    style={{
+                      outline: isSelected ? '2px solid var(--color-brand)' : 'none',
+                      outlineOffset: '-2px',
                     }}
                   >
                     <div className="week-column-header">
@@ -840,7 +1236,21 @@ export default function CalendarPage() {
                         </div>
                       ))}
 
-                      {dayWatches.length === 0 && dayReleases.length === 0 && (
+                      {/* Planned */}
+                      {(plannedByDate[key] || []).map((p) => (
+                        <div key={p.id} className="week-item-card" style={{ borderLeft: '3px solid #00B4D8' }}>
+                          <span className="week-item-title" title={p.title}>
+                            📅 {p.title}
+                          </span>
+                          {p.note && (
+                            <div className="week-item-meta">
+                              <span>{p.note}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {dayWatches.length === 0 && dayReleases.length === 0 && (plannedByDate[key] || []).length === 0 && (
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '12px' }}>
                           No activity
                         </span>
@@ -851,305 +1261,68 @@ export default function CalendarPage() {
               })}
             </div>
           )}
-        </main>
+        </div>
 
-        {/* Sidebar */}
-        <aside className="calendar-sidebar-col">
-          {/* Upcoming releases list */}
-          <section className="sidebar-section">
-            <UpcomingReleases limit={10} showHeader={true} />
-          </section>
-
-          {/* Goals section */}
-          <section className="sidebar-section">
-            <h2 className="sidebar-section-title">
-              <TrendingUp size={18} color="var(--text-muted)" />
-              Watch Goals
-            </h2>
-
-            <div className="goals-list">
-              {goals.map((g) => {
-                const prog = getGoalProgress(g.text, g.completed)
-                const meta = getGoalProgressMeta(g.text, g.completed)
-
-                return (
-                  <div key={g.id} className="goal-item">
-                    <div className="goal-row">
-                      <input
-                        type="checkbox"
-                        checked={g.completed}
-                        className="goal-checkbox"
-                        onChange={() => handleToggleGoal(g.id)}
-                        id={`goal-chk-${g.id}`}
-                      />
-                      <div className="goal-text-wrapper">
-                        <label
-                          htmlFor={`goal-chk-${g.id}`}
-                          className={`goal-text ${g.completed ? 'goal-text--completed' : ''}`}
-                        >
-                          {g.text}
-                        </label>
-                      </div>
-                      <button
-                        onClick={() => setGoals((prev) => prev.filter((item) => item.id !== g.id))}
-                        className="btn-delete-log"
-                        style={{ padding: '2px' }}
-                        aria-label="Delete Goal"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-
-                    <div className="goal-progress-bar">
-                      <ProgressBar value={prog} height={6} color={g.completed ? 'var(--color-success)' : 'var(--color-brand)'} />
-                      <div className="goal-progress-meta">
-                        <span>Progress</span>
-                        <span>{meta}</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {isAddingGoal ? (
-              <form onSubmit={handleAddGoalSubmit} className="add-goal-form">
-                <input
-                  type="text"
-                  placeholder="New goal text..."
-                  value={newGoalText}
-                  onChange={(e) => setNewGoalText(e.target.value)}
-                  className="add-goal-input"
-                  autoFocus
-                />
-                <button type="submit" className="add-goal-submit">
-                  Add
-                </button>
-                <button type="button" className="add-goal-cancel" onClick={() => setIsAddingGoal(false)}>
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <button className="add-goal-btn" onClick={() => setIsAddingGoal(true)}>
-                <Plus size={16} />
-                Add Goal
-              </button>
-            )}
-          </section>
-        </aside>
+        {/* Right side panel — only when a day is selected, desktop only */}
+        {selectedDay && (
+          <div style={{
+            width: '320px', flexShrink: 0,
+            borderLeft: '1px solid var(--border-default)',
+            background: 'var(--bg-secondary)',
+            overflowY: 'auto', padding: '20px',
+          }}
+            className="calendar-side-panel"
+          >
+            <DayDetailContent
+              selectedDay={selectedDay}
+              dayLogs={selectedDateWatches}
+              plannedItems={plannedByDate[getLocalDateString(selectedDay)] || []}
+              onClose={() => setSelectedDay(null)}
+              onAddWatch={() => { setAddMode('watched'); setShowAddModal(true) }}
+              onAddPlan={() => { setAddMode('planned'); setShowAddModal(true) }}
+              onDeleteLog={handleDeleteLog}
+              onDeletePlan={removePlan}
+              getPosterUrl={(titleId) => {
+                const posterPath = watchlistPosterMap.get(titleId) || null
+                return getImageUrl(posterPath, 'w200')
+              }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Day Detail drawer for desktop / bottom sheet for mobile */}
-      {selectedDate && (
-        <>
-          {/* Desktop Drawer (render only if viewport width matches desktop and is open) */}
-          {isDetailOpen && (
-            <div className="detail-drawer-overlay" onClick={() => setIsDetailOpen(false)}>
-              <div className="detail-drawer" onClick={(e) => e.stopPropagation()}>
-                <div className="drawer-header">
-                  <h3 className="drawer-title">{selectedDateLabel}</h3>
-                  <button className="btn-close-drawer" onClick={() => setIsDetailOpen(false)}>
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="drawer-body">
-                  <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                    Watch Logs
-                  </h4>
-                  <div className="drawer-watches-list">
-                    {selectedDateWatches.length > 0 ? (
-                      selectedDateWatches.map((log) => {
-                        const posterPath = watchlistPosterMap.get(log.titleId) || null
-                        const poster = getImageUrl(posterPath, 'w200')
-                        const timeLabel = log.watchedAt instanceof Date
-                          ? log.watchedAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-                          : (log.watchedAt as any)?.toDate
-                          ? log.watchedAt.toDate().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-                          : ''
-
-                        return (
-                          <div key={log.id} className="watch-row-item">
-                            {poster ? (
-                              <img src={poster} alt={log.title} className="watch-row-poster" />
-                            ) : (
-                              <div className="watch-row-poster" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Film size={14} color="var(--text-muted)" />
-                              </div>
-                            )}
-                            <div className="watch-row-details">
-                              <div className="watch-row-title-box">
-                                <span className="watch-row-title">{log.title}</span>
-                                {log.episodeLabel && <span className="watch-row-lbl">{log.episodeLabel}</span>}
-                              </div>
-                              <div className="watch-row-meta">
-                                <Clock size={12} />
-                                <span>{timeLabel}</span>
-                                <span>•</span>
-                                <span>{formatRuntime(log.runtimeMinutes)}</span>
-                              </div>
-                            </div>
-                            <button className="btn-delete-log" onClick={() => handleDeleteLog(log)} aria-label="Delete watch log">
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        )
-                      })
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)' }}>
-                        No watch logs for this day
-                      </div>
-                    )}
-                  </div>
-
-                  <button className="btn-add-watch" onClick={() => setIsSearchOpen(true)}>
-                    <Plus size={16} />
-                    Add watch for this day
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Mobile BottomSheet version using existing component */}
-          <BottomSheet isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} label="Day Details">
-            <div style={{ padding: '0 var(--space-4) var(--space-6) var(--space-4)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-default)', paddingBottom: '12px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 800 }}>{selectedDateLabel}</h3>
-                <button onClick={() => setIsDetailOpen(false)} style={{ color: 'var(--text-muted)', padding: '4px' }}>
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                  Watch Logs
-                </h4>
-                <div className="drawer-watches-list">
-                  {selectedDateWatches.length > 0 ? (
-                    selectedDateWatches.map((log) => {
-                      const posterPath = watchlistPosterMap.get(log.titleId) || null
-                      const poster = getImageUrl(posterPath, 'w200')
-                      const timeLabel = log.watchedAt instanceof Date
-                        ? log.watchedAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-                        : (log.watchedAt as any)?.toDate
-                        ? log.watchedAt.toDate().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-                        : ''
-
-                      return (
-                        <div key={log.id} className="watch-row-item">
-                          {poster ? (
-                            <img src={poster} alt={log.title} className="watch-row-poster" />
-                          ) : (
-                            <div className="watch-row-poster" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Film size={14} color="var(--text-muted)" />
-                            </div>
-                          )}
-                          <div className="watch-row-details">
-                            <div className="watch-row-title-box">
-                              <span className="watch-row-title">{log.title}</span>
-                              {log.episodeLabel && <span className="watch-row-lbl">{log.episodeLabel}</span>}
-                            </div>
-                            <div className="watch-row-meta">
-                              <Clock size={12} />
-                              <span>{timeLabel}</span>
-                              <span>•</span>
-                              <span>{formatRuntime(log.runtimeMinutes)}</span>
-                            </div>
-                          </div>
-                          <button className="btn-delete-log" onClick={() => handleDeleteLog(log)} aria-label="Delete watch log">
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-                      No watch logs for this day
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <button className="btn-add-watch" onClick={() => setIsSearchOpen(true)}>
-                <Plus size={16} />
-                Add watch for this day
-              </button>
-            </div>
-          </BottomSheet>
-        </>
-      )}
-
-      {/* Search Overlay / Modal */}
-      {isSearchOpen && (
-        <div className="search-modal-overlay" onClick={() => setIsSearchOpen(false)}>
-          <div className="search-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="search-modal-header">
-              <div className="search-modal-input-wrapper">
-                <Search size={16} className="search-icon-inside" />
-                <input
-                  type="text"
-                  placeholder="Search movies or TV shows to log..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-modal-input"
-                  autoFocus
-                />
-              </div>
-              <button onClick={() => setIsSearchOpen(false)} style={{ color: 'var(--text-muted)' }}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="search-results-list">
-              {isSearchLoading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px' }}>
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="skeleton" style={{ height: 48, borderRadius: 'var(--radius-sm)' }} />
-                  ))}
-                </div>
-              ) : searchResults.length > 0 ? (
-                searchResults.map((result) => {
-                  const title = result.title ?? result.name ?? 'Untitled'
-                  const year = result.release_date
-                    ? new Date(result.release_date).getFullYear()
-                    : result.first_air_date
-                    ? new Date(result.first_air_date).getFullYear()
-                    : null
-                  const poster = getImageUrl(result.poster_path, 'w200')
-                  const typeLabel = result.media_type === 'movie' ? 'Movie' : 'TV Show'
-
-                  const compositeId = `${result.media_type}:${result.id}`
-
-                  return (
-                    <div
-                      key={compositeId}
-                      className="search-result-row"
-                      onClick={() => handleAddWatch(title, compositeId, result.media_type as MediaType, result.poster_path)}
-                    >
-                      {poster ? (
-                        <img src={poster} alt={title} className="search-result-poster" />
-                      ) : (
-                        <div className="search-result-poster" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Film size={14} color="var(--text-muted)" />
-                        </div>
-                      )}
-                      <div className="search-result-info">
-                        <div className="search-result-title">{title}</div>
-                        <div className="search-result-meta">
-                          {typeLabel} {year ? `(${year})` : ''}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              ) : searchQuery.length >= 2 ? (
-                <div className="search-empty-state">No matches found</div>
-              ) : (
-                <div className="search-empty-state">Type at least 2 characters to search...</div>
-              )}
-            </div>
+      {/* Mobile bottom sheet when day selected */}
+      {selectedDay && (
+        <div className="calendar-bottom-sheet">
+          <div style={{
+            padding: '16px 20px',
+            maxHeight: '50vh', overflowY: 'auto',
+          }}>
+            <DayDetailContent
+              selectedDay={selectedDay}
+              dayLogs={selectedDateWatches}
+              plannedItems={plannedByDate[getLocalDateString(selectedDay)] || []}
+              onClose={() => setSelectedDay(null)}
+              onAddWatch={() => { setAddMode('watched'); setShowAddModal(true) }}
+              onAddPlan={() => { setAddMode('planned'); setShowAddModal(true) }}
+              onDeleteLog={handleDeleteLog}
+              onDeletePlan={removePlan}
+              getPosterUrl={(titleId) => {
+                const posterPath = watchlistPosterMap.get(titleId) || null
+                return getImageUrl(posterPath, 'w200')
+              }}
+            />
           </div>
         </div>
+      )}
+
+      {showAddModal && selectedDay && (
+        <AddWatchModal
+          date={selectedDay}
+          mode={addMode}
+          onClose={() => setShowAddModal(false)}
+          onAdd={handleAddEntry}
+        />
       )}
     </div>
   )

@@ -378,15 +378,15 @@ export default function HomePage() {
                         className="hp-btn-resume"
                         onClick={() =>
                           navigate(continueWatchingProgress.type === 'tv'
-                            ? `/watchlist/${encodeURIComponent(continueWatchingProgress.titleId)}/episodes`
-                            : `/watchlist/${encodeURIComponent(continueWatchingProgress.titleId)}`)
+                            ? `/title/${encodeURIComponent(continueWatchingProgress.titleId)}/episodes`
+                            : `/title/${encodeURIComponent(continueWatchingProgress.titleId)}`)
                         }
                       >
                         <Play size={12} fill="currentColor" /> Resume
                       </button>
                       <button
                         className="hp-btn-details"
-                        onClick={() => navigate(`/watchlist/${encodeURIComponent(continueWatchingProgress.titleId)}`)}
+                        onClick={() => navigate(`/title/${encodeURIComponent(continueWatchingProgress.titleId)}`)}
                       >
                         Details
                       </button>

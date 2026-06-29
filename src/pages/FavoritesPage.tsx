@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
-import { getImageUrl } from '@/lib/tmdb'
 import './FavoritesPage.css'
+
+import { PosterCard } from '@/components/ui/PosterCard'
 
 export default function FavoritesPage() {
   const navigate = useNavigate()
-  const { entries, updateEntry } = useWatchlist()
+  const { entries } = useWatchlist()
   const [activeFilter, setActiveFilter] = useState('All')
   const [sortBy, setSortBy] = useState('date')
   
@@ -32,9 +33,6 @@ export default function FavoritesPage() {
       return getMs(b.addedAt) - getMs(a.addedAt)
     })
 
-  const toggleFavorite = (titleId: string) => {
-    updateEntry(titleId, { isFavorite: false })
-  }
 
   return (
     <div style={{
@@ -121,71 +119,17 @@ export default function FavoritesPage() {
         /* Poster grid */
         <div className="poster-grid">
           {filteredFavorites.map(entry => (
-            <div
+            <PosterCard
               key={entry.titleId}
+              title={entry.title}
+              year={entry.year}
+              posterPath={entry.posterPath}
+              rating={entry.rating}
+              type={entry.type}
+              isFavorite={entry.isFavorite}
+              status={entry.status}
               onClick={() => navigate(`/title/${entry.titleId}`)}
-              style={{ cursor: 'pointer', position: 'relative' }}
-            >
-              {/* Poster */}
-              <div style={{ position: 'relative', borderRadius: 'var(--radius-md)',
-                overflow: 'hidden', aspectRatio: '2/3' }}>
-                <img
-                  src={getImageUrl(entry.posterPath, 'w500') || ''}
-                  alt={entry.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                {/* Gradient overlay */}
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%',
-                  background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                }} />
-                {/* Heart badge */}
-                <div style={{
-                  position: 'absolute', top: 8, right: 8,
-                  background: 'rgba(0,0,0,0.6)', borderRadius: '50%',
-                  width: 32, height: 32, display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontSize: '14px',
-                }}>❤️</div>
-                {/* Rating badge */}
-                {entry.rating && (
-                  <div style={{
-                    position: 'absolute', top: 8, left: 8,
-                    background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
-                    borderRadius: 'var(--radius-sm)', padding: '2px 6px',
-                    fontSize: '11px', fontWeight: 700, color: '#F5C518',
-                  }}>⭐ {entry.rating}</div>
-                )}
-                {/* Title over gradient */}
-                <div style={{
-                  position: 'absolute', bottom: 8, left: 8, right: 8,
-                }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700,
-                    color: 'white', lineHeight: 1.3,
-                    display: '-webkit-box', WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                  }}>{entry.title}</div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)',
-                    marginTop: '2px' }}>{entry.year}</div>
-                </div>
-              </div>
-
-              {/* Unfavorite button below card */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleFavorite(entry.titleId)
-                }}
-                style={{
-                  width: '100%', marginTop: '6px', padding: '6px',
-                  background: 'rgba(229,9,20,0.1)',
-                  border: '1px solid rgba(229,9,20,0.3)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--color-error)', fontSize: '12px',
-                  fontWeight: 600, cursor: 'pointer',
-                }}
-              >♥ Remove from Favorites</button>
-            </div>
+            />
           ))}
         </div>
       )}

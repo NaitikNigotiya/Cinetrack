@@ -13,6 +13,7 @@ import {
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
 import { getImageUrl } from '@/lib/tmdb'
 import type { WatchlistEntry } from '@/types/app'
+import { PosterCard } from '@/components/ui/PosterCard'
 
 import './CompletedPage.css'
 
@@ -360,36 +361,19 @@ export default function CompletedPage() {
                       <span className="timeline-group-stats">{group.items.length} titles · {group.totalHrs}h</span>
                     </div>
 
-                    <div className="timeline-items-grid">
-                      {group.items.map((e) => {
-                        const poster = getImageUrl(e.posterPath, 'w200')
-                        const watchDateStr = e.completionDate.toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                        return (
-                          <article key={e.titleId} className="timeline-card" onClick={() => navigate(`/title/${e.titleId}`)}>
-                            <div className="timeline-card-poster-wrap">
-                              {poster ? (
-                                <img src={poster} alt={e.title} className="timeline-card-poster-img" loading="lazy" />
-                              ) : (
-                                <div className="timeline-card-no-poster"><Film size={22} /></div>
-                              )}
-                              {e.rating && (
-                                <div className="timeline-card-rating-badge">⭐ {e.rating}</div>
-                              )}
-                            </div>
-                            <div className="timeline-card-info">
-                              <h4 className="timeline-card-title">{e.title}</h4>
-                              <p className="timeline-card-meta">{e.year > 0 ? e.year : '—'} · {e.type === 'movie' ? 'Movie' : 'TV'}</p>
-                              <div className="timeline-card-footer">
-                                <span className="timeline-card-date">Completed {watchDateStr}</span>
-                                <span className="timeline-card-runtime">{Math.round((e.totalRuntime || 120) / 60)}h</span>
-                              </div>
-                            </div>
-                          </article>
-                        )
-                      })}
+                    <div className="poster-grid">
+                      {group.items.map((e) => (
+                        <PosterCard
+                          key={e.titleId}
+                          title={e.title}
+                          year={e.year}
+                          posterPath={e.posterPath}
+                          rating={e.rating}
+                          type={e.type}
+                          status="completed"
+                          onClick={() => navigate(`/title/${e.titleId}`)}
+                        />
+                      ))}
                     </div>
                   </section>
                 ))}

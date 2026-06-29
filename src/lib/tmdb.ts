@@ -105,7 +105,7 @@ export function searchMulti(
  */
 export function getMovieDetails(id: number): Promise<TMDbMovie> {
   return tmdbFetch<TMDbMovie>(`/movie/${id}`, {
-    append_to_response: 'credits,videos,similar',
+    append_to_response: 'credits,videos,similar,images',
   })
 }
 
@@ -114,7 +114,7 @@ export function getMovieDetails(id: number): Promise<TMDbMovie> {
  */
 export function getTVDetails(id: number): Promise<TMDbTV> {
   return tmdbFetch<TMDbTV>(`/tv/${id}`, {
-    append_to_response: 'credits,videos,similar',
+    append_to_response: 'credits,videos,similar,images',
   })
 }
 
@@ -194,3 +194,28 @@ export function getTitleImages(
 ): Promise<{ backdrops: { file_path: string }[] }> {
   return tmdbFetch<{ backdrops: { file_path: string }[] }>(`/${type}/${id}/images`)
 }
+
+export function getTrailerKey(
+  videos: { results: { key: string; site: string; type: string; official: boolean }[] } | undefined
+): string | null {
+  if (!videos?.results?.length) return null
+
+  // Priority: official trailer → any trailer → teaser
+  const officialTrailer = videos.results.find(
+    v => v.site === 'YouTube' && v.type === 'Trailer' && v.official
+  )
+  if (officialTrailer) return officialTrailer.key
+
+  const anyTrailer = videos.results.find(
+    v => v.site === 'YouTube' && v.type === 'Trailer'
+  )
+  if (anyTrailer) return anyTrailer.key
+
+  const teaser = videos.results.find(
+    v => v.site === 'YouTube' && v.type === 'Teaser'
+  )
+  if (teaser) return teaser.key
+
+  return null
+}
+

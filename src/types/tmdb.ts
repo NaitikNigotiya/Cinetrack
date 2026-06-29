@@ -87,6 +87,7 @@ export interface TMDbMovie {
   credits: TMDbCredits
   videos: TMDbVideos
   similar: TMDbSearchResponse
+  images?: { backdrops: { file_path: string }[] }
 }
 
 // ─── TV ───────────────────────────────────────────────────────────────────────
@@ -120,6 +121,7 @@ export interface TMDbTV {
   credits: TMDbCredits
   videos: TMDbVideos
   similar: TMDbSearchResponse
+  images?: { backdrops: { file_path: string }[] }
 }
 
 // ─── Season / Episode ─────────────────────────────────────────────────────────

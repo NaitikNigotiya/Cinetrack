@@ -25,6 +25,7 @@ interface EpisodeRowProps {
   isWatched: boolean
   isFocused: boolean
   spoilerFree: boolean
+  isNextToWatch: boolean
   onToggle: () => void
   onFocus: () => void
 }
@@ -34,6 +35,7 @@ function EpisodeRow({
   isWatched,
   isFocused,
   spoilerFree,
+  isNextToWatch,
   onToggle,
   onFocus,
 }: EpisodeRowProps) {
@@ -65,6 +67,10 @@ function EpisodeRow({
       role="checkbox"
       aria-checked={isWatched}
       aria-label={`${epCode}: ${nameDisplay}`}
+      style={{
+        borderColor: isNextToWatch ? 'var(--color-brand)' : undefined,
+        background: isNextToWatch ? 'color-mix(in srgb, var(--color-brand) 6%, transparent)' : undefined,
+      }}
     >
       <div className="tracker-episode-checkbox-wrapper">
         <input
@@ -77,6 +83,15 @@ function EpisodeRow({
       </div>
 
       <span className="tracker-episode-code">{epCode}</span>
+
+      {isNextToWatch && (
+        <span style={{
+          fontSize: '9px', fontWeight: 800, letterSpacing: '1px',
+          background: 'var(--color-brand)', color: 'var(--text-on-brand)',
+          padding: '2px 6px', borderRadius: '999px', flexShrink: 0,
+          textTransform: 'uppercase',
+        }}>Next</span>
+      )}
 
       <div className="tracker-episode-main-info">
         <div className="tracker-episode-name-row">
@@ -94,7 +109,8 @@ function EpisodeRow({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function EpisodeTrackerPage() {
-  const { id } = useParams<{ id: string }>()
+  const { titleId, id: paramId } = useParams<{ titleId?: string; id?: string }>()
+  const id = titleId || paramId
   const navigate = useNavigate()
 
   const [type, tmdbIdStr] = id?.split(':') ?? []
@@ -105,7 +121,7 @@ export default function EpisodeTrackerPage() {
   useEffect(() => {
     if (id && !isTv) {
       alert('Episode tracking is only available for TV shows.')
-      navigate(`/watchlist/${encodeURIComponent(id)}`, { replace: true })
+      navigate(`/title/${encodeURIComponent(id)}`, { replace: true })
     }
   }, [id, isTv, navigate])
 
@@ -410,6 +426,9 @@ export default function EpisodeTrackerPage() {
                 <div className="accordion-header-details">
                   <div className="accordion-title-row">
                     <span className="accordion-season-title">Season {sNumber}</span>
+                    <span className="accordion-episode-count">
+                      · {season.totalEpisodes} episodes
+                    </span>
                     <span className={`accordion-completion-badge ${badgeClass}`}>
                       {progressText}
                     </span>
@@ -437,14 +456,14 @@ export default function EpisodeTrackerPage() {
                       onClick={() => handleMarkAll(sNumber)}
                       type="button"
                     >
-                      Mark all
+                      ✓ Mark all watched
                     </button>
                     <button
                       className="accordion-bulk-btn"
                       onClick={() => handleUnmarkAll(sNumber)}
                       type="button"
                     >
-                      Unmark all
+                      ✗ Clear all
                     </button>
                   </div>
 
@@ -454,6 +473,14 @@ export default function EpisodeTrackerPage() {
                       const isWatched = season.episodesWatched.includes(ep.episode_number)
                       const isFocused = activeSeasonNumber === sNumber && focusedEpisodeIndex === idx
 
+                      const unwatchedEpisodes = episodes.filter(e => !season.episodesWatched.includes(e.episode_number))
+                      const nextUnwatchedNum = unwatchedEpisodes.length > 0
+                        ? Math.min(...unwatchedEpisodes.map(e => e.episode_number))
+                        : null
+                      const isNextToWatch = !season.completed && 
+                        nextUnwatchedNum !== null &&
+                        ep.episode_number === nextUnwatchedNum
+
                       return (
                         <EpisodeRow
                           key={ep.id}
@@ -461,6 +488,7 @@ export default function EpisodeTrackerPage() {
                           isWatched={isWatched}
                           isFocused={isFocused}
                           spoilerFree={spoilerFree}
+                          isNextToWatch={isNextToWatch}
                           onToggle={() =>
                             handleToggleEpisode(
                               sNumber,

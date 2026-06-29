@@ -17,6 +17,7 @@ import { useWatchlistStore } from '@/features/watchlist/watchlistStore'
 import { addToWatchlist } from '@/features/watchlist/addToWatchlist'
 import { getTrending, getImageUrl } from '@/lib/tmdb'
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { PosterCard } from '@/components/ui/PosterCard'
 
 import type { TMDbSearchResult } from '@/types/tmdb'
 import type { MediaType, WatchStatus } from '@/types/app'
@@ -77,54 +78,6 @@ function getTitle(r: TMDbSearchResult) {
   return r.title ?? r.name ?? 'Untitled'
 }
 
-// ─── Result Card ─────────────────────────────────────────────────────────────
-
-function ResultCard({ result, onAdd }: { result: TMDbSearchResult; onAdd: (r: TMDbSearchResult) => void }) {
-  const navigate = useNavigate()
-  const titleId = makeTitleId(result)
-  const inList  = useWatchlistStore((s) => s.titleIds.includes(titleId))
-  const title   = getTitle(result)
-  const year    = getYear(result)
-  const rating  = result.vote_average > 0 ? result.vote_average.toFixed(1) : null
-  const poster  = getImageUrl(result.poster_path, 'w500')
-  const isMovie = result.media_type === 'movie'
-
-  return (
-    <article className="sp-card" onClick={() => navigate(`/title/${result.media_type}:${result.id}`)} style={{ cursor: 'pointer' }}>
-      <div className="sp-card-poster-wrap">
-        {poster
-          ? <img src={poster} alt={title} className="sp-card-poster" loading="lazy" />
-          : <div className="sp-card-no-poster"><Film size={32} color="var(--text-muted)" /></div>}
-
-        {/* Bottom gradient + title overlay */}
-        <div className="sp-card-gradient" />
-        <div className="sp-card-overlay-text">
-          <p className="sp-card-overlay-title">{title}</p>
-          <p className="sp-card-overlay-year">{year}</p>
-        </div>
-
-        {/* Type badge top-left */}
-        <span className={`sp-card-type-badge ${isMovie ? 'sp-card-type-badge--movie' : 'sp-card-type-badge--tv'}`}>
-          {isMovie ? 'MOVIE' : 'TV'}
-        </span>
-
-        {/* Rating badge top-right */}
-        {rating && (
-          <span className="sp-card-rating-badge">⭐ {rating}</span>
-        )}
-      </div>
-
-      {inList ? (
-        <div className="sp-card-in-list">✓ In Watchlist</div>
-      ) : (
-        <button className="sp-card-add-btn" onClick={(e) => { e.stopPropagation(); onAdd(result) }} type="button">
-          + Add
-        </button>
-      )}
-    </article>
-  )
-}
-
 // ─── Skeleton Grid ────────────────────────────────────────────────────────────
 
 function SkeletonGrid() {
@@ -177,6 +130,7 @@ export default function SearchPage() {
   // Hooks
   const { results, isLoading, isError, isEmpty } = useSearch(query)
   const { recent, addSearch, clearSearch, clearAll } = useRecentSearches()
+  const watchlistIds = useWatchlistStore((s) => s.titleIds)
 
   const { data: trendingData } = useQuery({
     queryKey: ['trending', 'week'] as const,
@@ -487,15 +441,24 @@ export default function SearchPage() {
 
             {/* Results grid */}
             {!isLoading && !isError && filteredResults.length > 0 && (
-              <div
-                className="sp-results-grid animate-fade-in"
-                role="list"
-                aria-label={`${filteredResults.length} results`}
-              >
+              <div className="poster-grid animate-fade-in">
                 {filteredResults.map((result) => (
-                  <div key={result.id} role="listitem">
-                    <ResultCard result={result} onAdd={handleOpenAdd} />
-                  </div>
+                  <PosterCard
+                    key={result.id}
+                    title={result.title || result.name || ''}
+                    year={result.release_date
+                      ? new Date(result.release_date).getFullYear()
+                      : result.first_air_date
+                      ? new Date(result.first_air_date).getFullYear()
+                      : null}
+                    posterPath={result.poster_path}
+                    rating={result.vote_average}
+                    type={result.media_type as 'movie' | 'tv'}
+                    showAddButton={true}
+                    isInWatchlist={watchlistIds.includes(`${result.media_type}:${result.id}`)}
+                    onClick={() => navigate(`/title/${result.media_type}:${result.id}`)}
+                    onAddClick={(e) => { e.stopPropagation(); handleOpenAdd(result) }}
+                  />
                 ))}
               </div>
             )}

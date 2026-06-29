@@ -169,11 +169,12 @@
   position: relative;
   cursor: pointer;
   transition: background var(--transition-fast);
+  overflow: hidden; /* Prevent pill overflow */
 }
 
 @media (min-width: 1024px) {
   .calendar-day-cell {
-    min-height: 90px; /* Desktop min-height */
+    min-height: 80px; /* Desktop min-height */
   }
 }
 

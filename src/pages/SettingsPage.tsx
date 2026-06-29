@@ -1,976 +1,878 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, getDocs, writeBatch } from 'firebase/firestore'
 import {
-  Globe, Palette, Database, Bell, Info, LogOut,
-  Sun, Moon, Monitor, Download, Upload, Trash2,
-  Wifi, WifiOff, ChevronDown, ChevronRight,
+  Palette,
+  Settings,
+  Database,
+  Bell,
+  User,
+  Info,
+  LogOut,
 } from 'lucide-react'
 
-import { useAuth } from '@/features/auth/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/features/auth/useAuth'
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
 import { db, COLLECTIONS } from '@/lib/firebase'
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { useToast } from '@/components/ui/Toast'
-import type { WatchlistEntry } from '@/types/app'
 import './SettingsPage.css'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-type NavSection = 'general' | 'appearance' | 'data' | 'notifications' | 'about'
-
-const NAV_ITEMS: { id: NavSection; label: string; icon: React.ReactNode }[] = [
-  { id: 'general',       label: 'General',       icon: <Globe size={15} /> },
-  { id: 'appearance',    label: 'Appearance',     icon: <Palette size={15} /> },
-  { id: 'data',          label: 'Data & Sync',    icon: <Database size={15} /> },
-  { id: 'notifications', label: 'Notifications',  icon: <Bell size={15} /> },
-  { id: 'about',         label: 'About',          icon: <Info size={15} /> },
-]
-
-const ACCENT_COLORS = [
-  { hex: '#E50914', label: 'Netflix Red' },
-  { hex: '#F5C518', label: 'IMDb Gold' },
-  { hex: '#8B5CF6', label: 'Purple' },
-  { hex: '#2ECC71', label: 'Green' },
-  { hex: '#00B4D8', label: 'Teal' },
-  { hex: '#FF6B6B', label: 'Coral' },
-]
-
-const ACCENT_STORAGE_KEY = 'cinetrack-accent-color'
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function applyAccentColor(hex: string) {
-  document.documentElement.style.setProperty('--color-brand', hex)
-  localStorage.setItem(ACCENT_STORAGE_KEY, hex)
-}
-
-function getStoredAccent(): string {
-  return localStorage.getItem(ACCENT_STORAGE_KEY) || '#E50914'
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function SettingsPage() {
-  const { user, signOut } = useAuth()
-  const { theme, setTheme } = useTheme()
-  const { entries, addEntry } = useWatchlist()
   const navigate = useNavigate()
-  const { showToast } = useToast()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { theme, setTheme } = useTheme()
+  const { user, signOut } = useAuth()
+  const { entries } = useWatchlist()
 
-  // ── Active section (desktop nav) ──
-  const [activeSection, setActiveSection] = useState<NavSection>('general')
-  // On mobile, track which sections are expanded
-  const [expandedSections, setExpandedSections] = useState<Set<NavSection>>(
-    new Set(['general'])
+  // ─── STATE MANAGEMENT ───────────────────────────────────────────────────────
+  const [dateFormat, setDateFormat] = useState(
+    () => localStorage.getItem('cinetrack-date-format') || 'DD/MM/YYYY'
   )
-
-  // ── General prefs ──
-  const [language, setLanguage] = useState('en')
-  const [dateFormat, setDateFormat] = useState(() =>
-    localStorage.getItem('cinetrack-date-format') || 'DD/MM/YYYY'
+  const [timeFormat, setTimeFormat] = useState(
+    () => localStorage.getItem('cinetrack-time-format') || '12h'
   )
-  const [timeFormat, setTimeFormat] = useState(() =>
-    localStorage.getItem('cinetrack-time-format') || '12h'
+  const [defaultStatus, setDefaultStatus] = useState(
+    () => localStorage.getItem('cinetrack-default-status') || 'plan_to_watch'
   )
-  const [defaultStatus, setDefaultStatus] = useState(() =>
-    localStorage.getItem('cinetrack-default-status') || 'plan_to_watch'
+  const [spoilerFree, setSpoilerFree] = useState(
+    () => localStorage.getItem('cinetrack-spoiler-free') === 'true'
   )
-  const [ratingSystem, setRatingSystem] = useState(() =>
-    localStorage.getItem('cinetrack-rating-system') || '/10'
+  const [ratingSystem, setRatingSystem] = useState(
+    () => localStorage.getItem('cinetrack-rating-system') || 'ten'
   )
-  const [spoilerFree, setSpoilerFree] = useState(() =>
-    localStorage.getItem('cinetrack-spoiler-free') === 'true'
-  )
-
-  // ── Appearance ──
-  const [accentColor, setAccentColor] = useState(getStoredAccent)
-  const [posterSize, setPosterSize] = useState(() =>
-    localStorage.getItem('cinetrack-poster-size') || 'Medium'
-  )
-  const [gridDensity, setGridDensity] = useState(() =>
-    localStorage.getItem('cinetrack-grid-density') || 'Comfortable'
-  )
-
-  // ── Notifications ──
-  const [pushEnabled, setPushEnabled] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [episodeAlerts, setEpisodeAlerts] = useState(false)
   const [weeklyRecap, setWeeklyRecap] = useState(false)
-  const [releaseReminders, setReleaseReminders] = useState(false)
-  const [browserPermission, setBrowserPermission] = useState<'default' | 'granted' | 'denied'>('default')
-
-  // ── Data & Sync ──
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
-  const [autoBackup, setAutoBackup] = useState(() =>
-    localStorage.getItem('cinetrack-auto-backup') === 'true'
+  const [accentColor, setAccentColor] = useState(
+    () => localStorage.getItem('cinetrack-accent-color') || '#E50914'
   )
-  const [lastSyncTime] = useState(() => {
-    const saved = localStorage.getItem('cinetrack-last-sync')
-    return saved ? new Date(saved) : null
-  })
 
-  // ── Confirm dialogs ──
-  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
-  const [showClearHistoryConfirm, setShowClearHistoryConfirm] = useState(false)
-
-  // ── Online / Offline listener ──
+  // Apply stored accent color on mount
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
-
-  // ── Browser notification permission ──
-  useEffect(() => {
-    if ('Notification' in window) {
-      setBrowserPermission(Notification.permission)
-    }
-  }, [])
-
-  // ── Restore saved accent color on mount ──
-  useEffect(() => {
-    const saved = localStorage.getItem(ACCENT_STORAGE_KEY)
+    const saved = localStorage.getItem('cinetrack-accent-color')
     if (saved) {
       document.documentElement.style.setProperty('--color-brand', saved)
     }
   }, [])
 
-  // ── Save helpers ──
-  const save = useCallback((key: string, value: string) => {
-    localStorage.setItem(key, value)
-  }, [])
-
-  // ── Accent Color ──
-  const handleAccentChange = (hex: string) => {
-    setAccentColor(hex)
-    applyAccentColor(hex)
-    showToast('Accent color updated!', 'success')
+  // Sync state changes to local storage
+  const handleDateFormatChange = (val: string) => {
+    setDateFormat(val)
+    localStorage.setItem('cinetrack-date-format', val)
   }
 
-  // ── Push notifications master toggle ──
-  const handlePushToggle = async () => {
-    if (!('Notification' in window)) {
-      showToast('Notifications are not supported in this browser.', 'error')
-      return
-    }
-    const next = !pushEnabled
-    if (next) {
-      const perm = await Notification.requestPermission()
-      setBrowserPermission(perm)
-      if (perm === 'granted') {
-        setPushEnabled(true)
-        showToast('Push notifications enabled!', 'success')
-      } else {
-        showToast('Permission was denied.', 'error')
-      }
-    } else {
-      setPushEnabled(false)
-    }
+  const handleTimeFormatChange = (val: string) => {
+    setTimeFormat(val)
+    localStorage.setItem('cinetrack-time-format', val)
   }
 
-  // ── Sign Out ──
-  const handleSignOut = async () => {
+  const handleDefaultStatusChange = (val: string) => {
+    setDefaultStatus(val)
+    localStorage.setItem('cinetrack-default-status', val)
+  }
+
+  const handleSpoilerFreeChange = (val: boolean) => {
+    setSpoilerFree(val)
+    localStorage.setItem('cinetrack-spoiler-free', String(val))
+  }
+
+  const handleRatingSystemChange = (val: string) => {
+    setRatingSystem(val)
+    localStorage.setItem('cinetrack-rating-system', val)
+  }
+
+  const handleAccentChange = (color: string) => {
+    setAccentColor(color)
+    document.documentElement.style.setProperty('--color-brand', color)
+    localStorage.setItem('cinetrack-accent-color', color)
+  }
+
+  // ─── HANDLERS ───────────────────────────────────────────────────────────────
+  const downloadFile = (filename: string, data: string) => {
+    const blob = new Blob([data], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExport = () => {
     try {
-      await signOut()
-      navigate('/login')
+      const dataStr = JSON.stringify(entries, null, 2)
+      downloadFile(`cinetrack-backup-${new Date().toISOString().slice(0, 10)}.json`, dataStr)
     } catch (err) {
-      console.error(err)
-      showToast('Failed to sign out. Try again.', 'error')
+      console.error('[CineTrack] Export backup failed:', err)
+      alert('Export failed.')
     }
   }
 
-  // ── Export full backup JSON ──
-  const handleExport = async () => {
+  const handleClearHistory = async () => {
     if (!user) return
-    try {
-      showToast('Preparing export...', 'success')
-
-      // Fetch watchlist
-      const watchlistSnap = await getDocs(
-        collection(db, `users/${user.uid}/${COLLECTIONS.WATCHLIST}`)
-      )
-      const watchlistData = watchlistSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-
-      // Fetch history
-      const historySnap = await getDocs(
-        collection(db, `users/${user.uid}/${COLLECTIONS.HISTORY}`)
-      )
-      const historyData = historySnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-
-      // Fetch reviews
-      const reviewsSnap = await getDocs(
-        collection(db, `users/${user.uid}/reviews`)
-      )
-      const reviewsData = reviewsSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-
-      // Fetch notes
-      const notesSnap = await getDocs(
-        collection(db, `users/${user.uid}/notes`)
-      )
-      const notesData = notesSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-
-      const exportPayload = {
-        exportedAt: new Date().toISOString(),
-        version: '1.0.0',
-        watchlist: watchlistData,
-        history: historyData,
-        reviews: reviewsData,
-        notes: notesData,
-      }
-
-      const dataStr = JSON.stringify(exportPayload, null, 2)
-      const blob = new Blob([dataStr], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `cinetrack-backup-${new Date().toISOString().slice(0, 10)}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      // Record sync time
-      localStorage.setItem('cinetrack-last-sync', new Date().toISOString())
-      showToast('Backup exported successfully!', 'success')
-    } catch (err) {
-      console.error('[CineTrack] Export failed:', err)
-      showToast('Export failed. Please try again.', 'error')
-    }
-  }
-
-  // ── Import JSON ──
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user) return
-
-    const reader = new FileReader()
-    reader.onload = async (event) => {
+    const message = 'Are you sure you want to permanently clear all watch history logs? This action is destructive and cannot be undone.'
+    if (window.confirm(message)) {
       try {
-        const raw = event.target?.result as string
-        const parsed = JSON.parse(raw)
+        const historyColRef = collection(db, `users/${user.uid}/${COLLECTIONS.HISTORY}`)
+        const snapshot = await getDocs(historyColRef)
 
-        // Support both raw array format (legacy) and new structured format
-        const watchlistItems: Partial<WatchlistEntry>[] = Array.isArray(parsed)
-          ? parsed
-          : (parsed.watchlist ?? [])
+        const batch = writeBatch(db)
+        snapshot.docs.forEach((docItem) => {
+          batch.delete(docItem.ref)
+        })
 
-        if (!Array.isArray(watchlistItems)) {
-          showToast('Invalid backup format. Must be a JSON array or CineTrack export.', 'error')
-          return
-        }
-
-        let count = 0
-        for (const item of watchlistItems) {
-          if (item.titleId && item.type && item.title) {
-            await addEntry({
-              titleId:      item.titleId,
-              type:         item.type,
-              title:        item.title,
-              posterPath:   item.posterPath  || null,
-              backdropPath: item.backdropPath || null,
-              year:         item.year         || 0,
-              genres:       item.genres       || [],
-              status:       item.status       || 'plan_to_watch',
+        // Reset episodes subcollections for TV progress
+        for (const entry of entries) {
+          if (entry.type === 'tv') {
+            const epColRef = collection(
+              db,
+              `users/${user.uid}/${COLLECTIONS.WATCHLIST}/${entry.titleId}/${COLLECTIONS.EPISODES}`
+            )
+            const epSnap = await getDocs(epColRef)
+            epSnap.docs.forEach((epDoc) => {
+              batch.delete(epDoc.ref)
             })
-            count++
           }
         }
 
-        showToast(`Imported ${count} titles successfully!`, 'success')
-      } catch (err) {
-        console.error('[CineTrack] Import failed:', err)
-        showToast('Import failed. Ensure file is valid JSON.', 'error')
-      } finally {
-        if (fileInputRef.current) fileInputRef.current.value = ''
-      }
-    }
-    reader.readAsText(file)
-  }
+        await batch.commit()
 
-  // ── Clear Watch History ──
-  const handleClearHistory = async () => {
-    if (!user) return
-    try {
-      const historyRef = collection(db, `users/${user.uid}/${COLLECTIONS.HISTORY}`)
-      const snap = await getDocs(historyRef)
-      const batch = writeBatch(db)
-      snap.docs.forEach((d) => batch.delete(d.ref))
+        // Reset runtime/episode counters on parent watchlist entries
+        const parentBatch = writeBatch(db)
+        const watchlistColRef = collection(db, `users/${user.uid}/${COLLECTIONS.WATCHLIST}`)
+        const wlSnap = await getDocs(watchlistColRef)
 
-      for (const entry of entries) {
-        if (entry.type === 'tv') {
-          const epRef = collection(
-            db,
-            `users/${user.uid}/${COLLECTIONS.WATCHLIST}/${entry.titleId}/${COLLECTIONS.EPISODES}`
+        wlSnap.docs.forEach((wlDoc) => {
+          parentBatch.set(
+            wlDoc.ref,
+            {
+              episodesWatched: 0,
+              totalRuntime: 0,
+              watchDates: [],
+            },
+            { merge: true }
           )
-          const epSnap = await getDocs(epRef)
-          epSnap.docs.forEach((ep) => batch.delete(ep.ref))
-        }
+        })
+
+        await parentBatch.commit()
+        alert('Watch history cleared successfully.')
+      } catch (err) {
+        console.error('[CineTrack] Clear history failed:', err)
+        alert('Failed to clear history.')
       }
-
-      await batch.commit()
-
-      // Reset counters on parent entries
-      const parentBatch = writeBatch(db)
-      const wlSnap = await getDocs(collection(db, `users/${user.uid}/${COLLECTIONS.WATCHLIST}`))
-      wlSnap.docs.forEach((doc) => {
-        parentBatch.set(doc.ref, { episodesWatched: 0, totalRuntime: 0, watchDates: [] }, { merge: true })
-      })
-      await parentBatch.commit()
-
-      showToast('Watch history cleared.', 'success')
-    } catch (err) {
-      console.error(err)
-      showToast('Failed to clear history.', 'error')
     }
   }
 
-  // ── Last sync formatter ──
-  const formatLastSync = () => {
-    if (!lastSyncTime) return 'Never'
-    const diffMs = Date.now() - lastSyncTime.getTime()
-    const diffMin = Math.floor(diffMs / 60000)
-    if (diffMin < 1) return 'Just now'
-    if (diffMin < 60) return `${diffMin} min ago`
-    const diffH = Math.floor(diffMin / 60)
-    return `${diffH}h ago`
+  const handleSignOutClick = () => {
+    if (window.confirm('Are you sure you want to sign out?')) {
+      signOut().then(() => {
+        navigate('/login')
+      })
+    }
   }
-
-  // ── Mobile accordion toggle ──
-  const toggleMobileSection = (id: NavSection) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const isNotifBlocked = browserPermission === 'denied'
-
-  // ─── Helpers: render individual sections ──────────────────────────────────
-
-  const renderGeneral = () => (
-    <section id="section-general" className="settings-section">
-      <p className="settings-section-lbl">General</p>
-      <div className="settings-group-box">
-        {/* Language */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Language</span>
-          </div>
-          <div className="settings-row-right">
-            <select
-              className="settings-select"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              aria-label="Language"
-            >
-              <option value="en">English</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Date Format */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Date Format</span>
-          </div>
-          <div className="settings-row-right">
-            <div className="segmented-control" role="radiogroup" aria-label="Date format">
-              {['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'].map((fmt) => (
-                <button
-                  key={fmt}
-                  type="button"
-                  role="radio"
-                  aria-checked={dateFormat === fmt}
-                  className={`segmented-btn ${dateFormat === fmt ? 'segmented-btn--active' : ''}`}
-                  onClick={() => { setDateFormat(fmt); save('cinetrack-date-format', fmt) }}
-                >
-                  {fmt}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Time Format */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Time Format</span>
-          </div>
-          <div className="settings-row-right">
-            <div className="segmented-control" role="radiogroup" aria-label="Time format">
-              {['12h', '24h'].map((fmt) => (
-                <button
-                  key={fmt}
-                  type="button"
-                  role="radio"
-                  aria-checked={timeFormat === fmt}
-                  className={`segmented-btn ${timeFormat === fmt ? 'segmented-btn--active' : ''}`}
-                  onClick={() => { setTimeFormat(fmt); save('cinetrack-time-format', fmt) }}
-                >
-                  {fmt}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Default Status */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Default Status</span>
-            <span className="settings-row-desc">Status applied when adding new titles</span>
-          </div>
-          <div className="settings-row-right">
-            <select
-              className="settings-select"
-              value={defaultStatus}
-              onChange={(e) => { setDefaultStatus(e.target.value); save('cinetrack-default-status', e.target.value) }}
-              aria-label="Default watchlist status"
-            >
-              <option value="plan_to_watch">Plan to Watch</option>
-              <option value="watching">Watching</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Rating System */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Rating System</span>
-            <span className="settings-row-desc">How ratings appear across the app</span>
-          </div>
-          <div className="settings-row-right">
-            <div className="segmented-control" role="radiogroup" aria-label="Rating system">
-              {['/10', '/5', '/5½'].map((sys) => (
-                <button
-                  key={sys}
-                  type="button"
-                  role="radio"
-                  aria-checked={ratingSystem === sys}
-                  className={`segmented-btn ${ratingSystem === sys ? 'segmented-btn--active' : ''}`}
-                  onClick={() => { setRatingSystem(sys); save('cinetrack-rating-system', sys) }}
-                >
-                  {sys}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Spoiler-Free Mode */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Spoiler-Free Mode</span>
-            <span className="settings-row-desc">Hides episode titles in the tracker</span>
-          </div>
-          <div className="settings-row-right">
-            <label className="toggle-switch" aria-label="Spoiler free mode">
-              <input
-                type="checkbox"
-                checked={spoilerFree}
-                onChange={(e) => {
-                  setSpoilerFree(e.target.checked)
-                  save('cinetrack-spoiler-free', String(e.target.checked))
-                }}
-              />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-
-  const renderAppearance = () => (
-    <section id="section-appearance" className="settings-section">
-      <p className="settings-section-lbl">Appearance</p>
-      <div className="settings-group-box">
-        {/* Theme */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <div className="settings-row-label-wrap">
-              {theme === 'light' ? <Sun size={15} /> : theme === 'dark' ? <Moon size={15} /> : <Monitor size={15} />}
-              <span className="settings-row-title">Theme</span>
-            </div>
-          </div>
-          <div className="settings-row-right">
-            <div className="segmented-control" role="radiogroup" aria-label="Theme">
-              <button
-                type="button" role="radio" aria-checked={theme === 'light'}
-                className={`segmented-btn ${theme === 'light' ? 'segmented-btn--active' : ''}`}
-                onClick={() => setTheme('light')}
-              >
-                ☀️ Light
-              </button>
-              <button
-                type="button" role="radio" aria-checked={theme === 'system'}
-                className={`segmented-btn ${theme === 'system' ? 'segmented-btn--active' : ''}`}
-                onClick={() => setTheme('system')}
-              >
-                System
-              </button>
-              <button
-                type="button" role="radio" aria-checked={theme === 'dark'}
-                className={`segmented-btn ${theme === 'dark' ? 'segmented-btn--active' : ''}`}
-                onClick={() => setTheme('dark')}
-              >
-                🌙 Dark
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Theme description */}
-        <div className="settings-row" style={{ minHeight: 'auto', paddingTop: 4, paddingBottom: 8, borderTop: 'none' }}>
-          <span className="settings-row-desc">
-            {theme === 'light'  && 'IMDb-inspired warm light theme'}
-            {theme === 'dark'   && 'Netflix-inspired deep dark theme'}
-            {theme === 'system' && 'Follows your device system preference'}
-          </span>
-        </div>
-
-        {/* Accent Color */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Accent Color</span>
-            <span className="settings-row-desc">Changes the brand color throughout the app</span>
-          </div>
-          <div className="settings-row-right">
-            <div className="accent-swatches-row">
-              {ACCENT_COLORS.map(({ hex, label }) => (
-                <button
-                  key={hex}
-                  type="button"
-                  className={`accent-swatch ${accentColor === hex ? 'accent-swatch--active' : ''}`}
-                  style={{ background: hex }}
-                  onClick={() => handleAccentChange(hex)}
-                  aria-label={`Set accent color to ${label}`}
-                  title={label}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Poster Size */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Poster Size</span>
-            <span className="settings-row-desc">Affects grid card sizes on listing pages</span>
-          </div>
-          <div className="settings-row-right">
-            <div className="segmented-control" role="radiogroup" aria-label="Poster size">
-              {['Small', 'Medium', 'Large'].map((size) => (
-                <button
-                  key={size}
-                  type="button" role="radio" aria-checked={posterSize === size}
-                  className={`segmented-btn ${posterSize === size ? 'segmented-btn--active' : ''}`}
-                  onClick={() => { setPosterSize(size); save('cinetrack-poster-size', size) }}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Grid Density */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Grid Density</span>
-            <span className="settings-row-desc">Control spacing between poster cards</span>
-          </div>
-          <div className="settings-row-right">
-            <div className="segmented-control" role="radiogroup" aria-label="Grid density">
-              {['Comfortable', 'Compact'].map((density) => (
-                <button
-                  key={density}
-                  type="button" role="radio" aria-checked={gridDensity === density}
-                  className={`segmented-btn ${gridDensity === density ? 'segmented-btn--active' : ''}`}
-                  onClick={() => { setGridDensity(density); save('cinetrack-grid-density', density) }}
-                >
-                  {density}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-
-  const renderData = () => (
-    <section id="section-data" className="settings-section">
-      <p className="settings-section-lbl">Data & Sync</p>
-      <div className="settings-group-box">
-        {/* Firebase sync status */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Firebase Sync</span>
-            <span className="settings-row-desc settings-row-desc--sync">
-              {isOnline ? 'Last sync: ' + formatLastSync() : 'No internet connection'}
-            </span>
-          </div>
-          <div className="settings-row-right">
-            <div className="sync-status">
-              <div className={`sync-dot ${isOnline ? 'sync-dot--online' : 'sync-dot--offline'}`} />
-              {isOnline ? (
-                <Wifi size={14} color="var(--color-success, #22c55e)" />
-              ) : (
-                <WifiOff size={14} color="var(--color-error, #ef4444)" />
-              )}
-              <span className="sync-label" style={{ color: isOnline ? 'var(--color-success, #22c55e)' : 'var(--color-error, #ef4444)' }}>
-                {isOnline ? 'Connected' : 'Offline'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Auto Backup */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Auto Backup</span>
-            <span className="settings-row-desc">Automatically save data snapshots</span>
-          </div>
-          <div className="settings-row-right">
-            <label className="toggle-switch" aria-label="Auto backup">
-              <input
-                type="checkbox"
-                checked={autoBackup}
-                onChange={(e) => {
-                  setAutoBackup(e.target.checked)
-                  save('cinetrack-auto-backup', String(e.target.checked))
-                }}
-              />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </div>
-
-        {/* Export JSON */}
-        <button className="settings-row settings-row-btn" onClick={handleExport} type="button" id="btn-export-data">
-          <div className="settings-row-left">
-            <div className="settings-row-label-wrap">
-              <Download size={15} color="var(--color-brand)" />
-              <span className="settings-btn-text settings-btn-text--brand">Export Data</span>
-            </div>
-            <span className="settings-row-desc">Download watchlist, history, reviews & notes as JSON</span>
-          </div>
-        </button>
-
-        {/* Import JSON */}
-        <button
-          className="settings-row settings-row-btn"
-          onClick={() => fileInputRef.current?.click()}
-          type="button"
-          id="btn-import-data"
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-label-wrap">
-              <Upload size={15} color="var(--text-secondary)" />
-              <span className="settings-btn-text">Import Data</span>
-            </div>
-            <span className="settings-row-desc">Restore or merge entries from a JSON backup file</span>
-          </div>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          className="settings-file-input"
-          onChange={handleImport}
-          aria-label="Import backup file"
-        />
-
-        {/* Clear History */}
-        <button
-          className="settings-row settings-row-btn"
-          onClick={() => setShowClearHistoryConfirm(true)}
-          type="button"
-          id="btn-clear-history"
-        >
-          <div className="settings-row-left">
-            <div className="settings-row-label-wrap">
-              <Trash2 size={15} color="var(--color-error, #ef4444)" />
-              <span className="settings-btn-text settings-btn-text--danger">Clear Watch History</span>
-            </div>
-            <span className="settings-row-desc" style={{ color: 'var(--color-error, #ef4444)' }}>
-              Irreversibly clears all logs, dates, and episode progress
-            </span>
-          </div>
-        </button>
-      </div>
-    </section>
-  )
-
-  const renderNotifications = () => (
-    <section id="section-notifications" className="settings-section">
-      {isNotifBlocked && (
-        <div
-          className="settings-info-banner"
-          onClick={() => alert('Please reset notification permissions in your browser site settings.')}
-        >
-          <span>Notifications blocked by browser — Click to fix →</span>
-        </div>
-      )}
-      <p className="settings-section-lbl">Notifications</p>
-      <div className="settings-group-box">
-        {/* Master Push toggle */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Push Notifications</span>
-            <span className="settings-row-desc">Master toggle for all in-app alerts</span>
-          </div>
-          <div className="settings-row-right">
-            <label className="toggle-switch" aria-label="Push notifications master toggle">
-              <input
-                type="checkbox"
-                checked={pushEnabled}
-                onChange={handlePushToggle}
-                disabled={isNotifBlocked}
-              />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </div>
-
-        {/* New Episode Alerts */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">New Episode Alerts</span>
-            <span className="settings-row-desc">Get notified when show episodes air</span>
-          </div>
-          <div className="settings-row-right">
-            <label className="toggle-switch" aria-label="New episode alerts">
-              <input
-                type="checkbox"
-                checked={episodeAlerts}
-                onChange={(e) => setEpisodeAlerts(e.target.checked)}
-                disabled={!pushEnabled || isNotifBlocked}
-              />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </div>
-
-        {/* Weekly Recap */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Weekly Recap</span>
-            <span className="settings-row-desc">Receive a weekly summary of your stats</span>
-          </div>
-          <div className="settings-row-right">
-            <label className="toggle-switch" aria-label="Weekly recap">
-              <input
-                type="checkbox"
-                checked={weeklyRecap}
-                onChange={(e) => setWeeklyRecap(e.target.checked)}
-                disabled={!pushEnabled || isNotifBlocked}
-              />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </div>
-
-        {/* Release Reminders */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Release Reminders</span>
-            <span className="settings-row-desc">Alerts for upcoming release dates in your watchlist</span>
-          </div>
-          <div className="settings-row-right">
-            <label className="toggle-switch" aria-label="Release reminders">
-              <input
-                type="checkbox"
-                checked={releaseReminders}
-                onChange={(e) => setReleaseReminders(e.target.checked)}
-                disabled={!pushEnabled || isNotifBlocked}
-              />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-
-  const renderAbout = () => (
-    <section id="section-about" className="settings-section">
-      <p className="settings-section-lbl">About</p>
-      <div className="settings-group-box">
-        {/* App name + version */}
-        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-          <span className="about-app-name">CineTrack v1.0.0</span>
-          <span className="about-tagline">Built with ❤️ for movie lovers</span>
-        </div>
-
-        {/* Signed-in user */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Signed in as</span>
-            <span className="settings-row-desc">{user?.email || 'Guest Explorer'}</span>
-          </div>
-        </div>
-
-        {/* Built with */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Built with</span>
-            <span className="settings-row-desc">React · Firebase · TMDb · Vite</span>
-          </div>
-          <div className="settings-row-right">
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>v1.0.0</span>
-          </div>
-        </div>
-
-        {/* Links */}
-        <div className="settings-row">
-          <div className="settings-row-left">
-            <span className="settings-row-title">Legal</span>
-            <div className="about-links-row" style={{ marginTop: 4 }}>
-              <a href="#" className="about-link">Privacy Policy</a>
-              <a href="#" className="about-link">Terms of Service</a>
-            </div>
-          </div>
-        </div>
-
-        {/* TMDb attribution */}
-        <div className="settings-row" style={{ borderTop: 'none' }}>
-          <div className="tmdb-attribution-box" style={{ width: '100%' }}>
-            <span className="tmdb-logo-badge">TMDb</span>
-            <p className="tmdb-attribution-text">
-              This product uses the TMDB API but is not endorsed or certified by TMDB.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Sign Out */}
-      <button
-        className="btn-sign-out"
-        onClick={() => setShowSignOutConfirm(true)}
-        type="button"
-        id="btn-sign-out"
-      >
-        <LogOut size={16} />
-        Sign Out
-      </button>
-    </section>
-  )
-
-  const SECTION_RENDERERS: Record<NavSection, () => React.ReactElement> = {
-    general:       renderGeneral,
-    appearance:    renderAppearance,
-    data:          renderData,
-    notifications: renderNotifications,
-    about:         renderAbout,
-  }
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="settings-page animate-fade-in">
-      <header className="settings-header">
-        <h1 className="settings-title">Settings</h1>
-      </header>
+    <div
+      className="settings-page"
+      style={{
+        height: '100vh', overflowY: 'auto', overflowX: 'hidden',
+        padding: '24px 32px 24px 32px', boxSizing: 'border-box',
+        scrollbarWidth: 'none', msOverflowStyle: 'none',
+        width: '100%',
+      }}
+    >
 
-      <div className="settings-layout">
-        {/* ── Left Nav (desktop only) ── */}
-        <nav className="settings-nav" aria-label="Settings navigation">
-          {NAV_ITEMS.map(({ id, label, icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveSection(id)}
-              aria-current={activeSection === id ? 'page' : undefined}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', padding: '12px 16px',
-                background: activeSection === id ? 'var(--bg-overlay)' : 'none',
-                boxShadow: activeSection === id ? 'inset 3px 0 0 var(--color-brand)' : 'none',
-                border: 'none', borderBottom: '1px solid var(--border-default)',
-                borderRadius: 0,
-                color: activeSection === id ? 'var(--color-brand)' : 'var(--text-secondary)',
-                fontWeight: activeSection === id ? 600 : 500,
-                fontSize: '14px', cursor: 'pointer', textAlign: 'left',
-                fontFamily: 'var(--font-family)',
-                transition: 'all 130ms ease',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {icon} {label}
-              </span>
-              <ChevronRight size={14} style={{ opacity: activeSection === id ? 1 : 0.35 }} />
-            </button>
-          ))}
-        </nav>
+      {/* Page Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 800,
+          color: 'var(--text-primary)', margin: 0 }}>Settings</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
+          Manage your preferences and account
+        </p>
+      </div>
 
-        {/* ── Right Content (desktop: single section; mobile: all sections) ── */}
-        <div className="settings-content-area">
-          {/* Desktop: render only active section */}
-          <div className="settings-desktop-section">
-            {SECTION_RENDERERS[activeSection]()}
+      {/* ─── APPEARANCE SECTION ─── */}
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-xl)',
+        marginBottom: '16px',
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
+        {/* Section header */}
+        <div style={{
+          padding: '16px 20px 12px',
+          borderBottom: '1px solid var(--border-default)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Palette size={18} color="var(--color-brand)" />
+          <span style={{ fontSize: '13px', fontWeight: 700,
+            color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '1px' }}>Appearance</span>
+        </div>
+
+        {/* Row 1: Theme */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Theme</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>
+              {theme === 'light' && 'IMDb-inspired warm theme'}
+              {theme === 'dark' && 'Netflix-inspired dark theme'}
+              {theme === 'system' && 'Follows device'}
+            </div>
           </div>
+          {/* Segmented Control */}
+          <div style={{
+            display: 'flex', background: 'var(--bg-elevated)',
+            borderRadius: 'var(--radius-md)', padding: '3px', gap: '2px',
+            border: '1px solid var(--border-default)',
+          }}>
+            {[
+              { value: 'light', label: '☀️ Light' },
+              { value: 'system', label: '🌓 System' },
+              { value: 'dark', label: '🌙 Dark' }
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setTheme(opt.value as any)}
+                style={{
+                  padding: '6px 14px', borderRadius: 'calc(var(--radius-md) - 2px)',
+                  border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+                  background: theme === opt.value ? 'var(--color-brand)' : 'transparent',
+                  color: theme === opt.value ? 'var(--text-on-brand)' : 'var(--text-muted)',
+                  transition: 'all 150ms ease', whiteSpace: 'nowrap',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Mobile: render all sections as accordions */}
-          <div className="settings-mobile-accordion">
-            {NAV_ITEMS.map(({ id, label, icon }) => {
-              const isExpanded = expandedSections.has(id)
+        {/* Row 2: Accent Color */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Accent Color</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Customize the app's brand color</div>
+          </div>
+          {/* Swatches */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {['#E50914', '#F5C518', '#8B5CF6', '#2ECC71', '#00B4D8', '#FF6B6B'].map(color => {
+              const isSelected = accentColor === color
               return (
-                <div key={id} className="settings-section" style={{ marginBottom: 0 }}>
-                  <button
-                    type="button"
-                    className="settings-section-lbl"
-                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 6px' }}
-                    onClick={() => toggleMobileSection(id)}
-                    aria-expanded={isExpanded}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {icon}
-                      {label}
-                    </span>
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </button>
-                  {isExpanded && SECTION_RENDERERS[id]()}
-                </div>
+                <button
+                  key={color}
+                  onClick={() => handleAccentChange(color)}
+                  style={{
+                    width: '28px', height: '28px', borderRadius: '50%',
+                    background: color, border: 'none', cursor: 'pointer',
+                    outline: isSelected ? '2px solid var(--text-primary)' : 'none',
+                    outlineOffset: isSelected ? '2px' : '0px',
+                    transform: isSelected ? 'scale(1.2)' : 'none',
+                    transition: 'all 150ms ease',
+                  }}
+                  aria-label={`Select accent color ${color}`}
+                />
               )
             })}
           </div>
         </div>
+
+        {/* Row 3: Rating System */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Rating System</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>How ratings appear across the app</div>
+          </div>
+          {/* Segmented Control */}
+          <div style={{
+            display: 'flex', background: 'var(--bg-elevated)',
+            borderRadius: 'var(--radius-md)', padding: '3px', gap: '2px',
+            border: '1px solid var(--border-default)',
+          }}>
+            {[
+              { value: 'ten', label: '/10' },
+              { value: 'five', label: '/5' },
+              { value: 'half', label: '/5½' }
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleRatingSystemChange(opt.value)}
+                style={{
+                  padding: '6px 14px', borderRadius: 'calc(var(--radius-md) - 2px)',
+                  border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+                  background: ratingSystem === opt.value ? 'var(--color-brand)' : 'transparent',
+                  color: ratingSystem === opt.value ? 'var(--text-on-brand)' : 'var(--text-muted)',
+                  transition: 'all 150ms ease', whiteSpace: 'nowrap',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* ── Confirm: Sign Out ── */}
-      <ConfirmDialog
-        isOpen={showSignOutConfirm}
-        title="Sign Out"
-        description="Are you sure you want to sign out of CineTrack? You'll need to sign back in to access your data."
-        confirmLabel="Sign Out"
-        confirmVariant="danger"
-        onConfirm={handleSignOut}
-        onCancel={() => setShowSignOutConfirm(false)}
-      />
+      {/* ─── GENERAL SECTION ─── */}
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-xl)',
+        marginBottom: '16px',
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
+        {/* Section header */}
+        <div style={{
+          padding: '16px 20px 12px',
+          borderBottom: '1px solid var(--border-default)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Settings size={18} color="var(--color-brand)" />
+          <span style={{ fontSize: '13px', fontWeight: 700,
+            color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '1px' }}>General</span>
+        </div>
 
-      {/* ── Confirm: Clear Watch History ── */}
-      <ConfirmDialog
-        isOpen={showClearHistoryConfirm}
-        title="Clear Watch History"
-        description="This will permanently delete all watch logs, dates, and episode progress. This action cannot be undone."
-        confirmLabel="Clear History"
-        confirmVariant="danger"
-        onConfirm={() => {
-          setShowClearHistoryConfirm(false)
-          handleClearHistory()
-        }}
-        onCancel={() => setShowClearHistoryConfirm(false)}
-      />
+        {/* Row 1: Date Format */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Date Format</div>
+          </div>
+          {/* Segmented Control */}
+          <div style={{
+            display: 'flex', background: 'var(--bg-elevated)',
+            borderRadius: 'var(--radius-md)', padding: '3px', gap: '2px',
+            border: '1px solid var(--border-default)',
+          }}>
+            {[
+              { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+              { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+              { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' }
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleDateFormatChange(opt.value)}
+                style={{
+                  padding: '6px 14px', borderRadius: 'calc(var(--radius-md) - 2px)',
+                  border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+                  background: dateFormat === opt.value ? 'var(--color-brand)' : 'transparent',
+                  color: dateFormat === opt.value ? 'var(--text-on-brand)' : 'var(--text-muted)',
+                  transition: 'all 150ms ease', whiteSpace: 'nowrap',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 2: Time Format */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Time Format</div>
+          </div>
+          {/* Segmented Control */}
+          <div style={{
+            display: 'flex', background: 'var(--bg-elevated)',
+            borderRadius: 'var(--radius-md)', padding: '3px', gap: '2px',
+            border: '1px solid var(--border-default)',
+          }}>
+            {[
+              { value: '12h', label: '12h' },
+              { value: '24h', label: '24h' }
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleTimeFormatChange(opt.value)}
+                style={{
+                  padding: '6px 14px', borderRadius: 'calc(var(--radius-md) - 2px)',
+                  border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+                  background: timeFormat === opt.value ? 'var(--color-brand)' : 'transparent',
+                  color: timeFormat === opt.value ? 'var(--text-on-brand)' : 'var(--text-muted)',
+                  transition: 'all 150ms ease', whiteSpace: 'nowrap',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3: Default Status */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Default Status</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Status applied when adding new titles</div>
+          </div>
+          <select
+            value={defaultStatus}
+            onChange={(e) => handleDefaultStatusChange(e.target.value)}
+            style={{
+              background: 'var(--input-bg)', border: '1px solid var(--input-border)',
+              borderRadius: 'var(--radius-md)', padding: '8px 12px',
+              color: 'var(--text-primary)', fontSize: '14px', cursor: 'pointer',
+            }}
+          >
+            <option value="plan_to_watch">Plan to Watch</option>
+            <option value="watching">Watching</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+
+        {/* Row 4: Spoiler-Free Mode */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Spoiler-Free Mode</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Hides episode titles in the tracker</div>
+          </div>
+          {/* Custom Toggle Switch */}
+          <div
+            onClick={() => handleSpoilerFreeChange(!spoilerFree)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '999px',
+              background: spoilerFree ? 'var(--color-brand)' : 'var(--border-strong)',
+              position: 'relative', cursor: 'pointer',
+              transition: 'background 200ms ease', flexShrink: 0,
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: '2px',
+              left: spoilerFree ? '22px' : '2px',
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: 'white',
+              transition: 'left 200ms ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }} />
+          </div>
+        </div>
+      </div>
+
+      {/* ─── DATA & SYNC SECTION ─── */}
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-xl)',
+        marginBottom: '16px',
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
+        {/* Section header */}
+        <div style={{
+          padding: '16px 20px 12px',
+          borderBottom: '1px solid var(--border-default)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Database size={18} color="var(--color-brand)" />
+          <span style={{ fontSize: '13px', fontWeight: 700,
+            color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '1px' }}>Data & Sync</span>
+        </div>
+
+        {/* Row 1: Sync Status */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Sync Status</div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <div style={{
+              width: '8px', height: '8px', background: '#2ECC71',
+              borderRadius: '50%',
+            }} />
+            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-success)' }}>
+              Connected
+            </span>
+          </div>
+        </div>
+
+        {/* Row 2: Export Data */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Export Data</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Download all your data as JSON</div>
+          </div>
+          <button
+            onClick={handleExport}
+            style={{
+              padding: '8px 16px', background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
+              fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer',
+            }}
+          >
+            Export JSON
+          </button>
+        </div>
+
+        {/* Row 3: Clear Watch History */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Clear Watch History</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Permanently delete your watch history log</div>
+          </div>
+          <button
+            onClick={handleClearHistory}
+            style={{
+              padding: '8px 16px', background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-md)',
+              fontSize: '13px', fontWeight: 600, color: 'var(--color-error)', cursor: 'pointer',
+            }}
+          >
+            Clear History
+          </button>
+        </div>
+      </div>
+
+      {/* ─── NOTIFICATIONS SECTION ─── */}
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-xl)',
+        marginBottom: '16px',
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
+        {/* Section header */}
+        <div style={{
+          padding: '16px 20px 12px',
+          borderBottom: '1px solid var(--border-default)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Bell size={18} color="var(--color-brand)" />
+          <span style={{ fontSize: '13px', fontWeight: 700,
+            color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '1px' }}>Notifications</span>
+        </div>
+
+        {/* Row 1: Push Notifications */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Push Notifications</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Enable browser push notifications</div>
+          </div>
+          {/* Custom Toggle Switch */}
+          <div
+            onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '999px',
+              background: notificationsEnabled ? 'var(--color-brand)' : 'var(--border-strong)',
+              position: 'relative', cursor: 'pointer',
+              transition: 'background 200ms ease', flexShrink: 0,
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: '2px',
+              left: notificationsEnabled ? '22px' : '2px',
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: 'white',
+              transition: 'left 200ms ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }} />
+          </div>
+        </div>
+
+        {/* Row 2: New Episode Alerts */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+          opacity: notificationsEnabled ? 1 : 0.5,
+          pointerEvents: notificationsEnabled ? 'auto' : 'none',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>New Episode Alerts</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Get notified when new episodes release</div>
+          </div>
+          {/* Custom Toggle Switch */}
+          <div
+            onClick={() => setEpisodeAlerts(!episodeAlerts)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '999px',
+              background: episodeAlerts ? 'var(--color-brand)' : 'var(--border-strong)',
+              position: 'relative', cursor: 'pointer',
+              transition: 'background 200ms ease', flexShrink: 0,
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: '2px',
+              left: episodeAlerts ? '22px' : '2px',
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: 'white',
+              transition: 'left 200ms ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }} />
+          </div>
+        </div>
+
+        {/* Row 3: Weekly Recap */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          gap: '16px',
+          opacity: notificationsEnabled ? 1 : 0.5,
+          pointerEvents: notificationsEnabled ? 'auto' : 'none',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: 600,
+              color: 'var(--text-primary)' }}>Weekly Recap</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+              marginTop: '2px' }}>Weekly summary of your watching activity</div>
+          </div>
+          {/* Custom Toggle Switch */}
+          <div
+            onClick={() => setWeeklyRecap(!weeklyRecap)}
+            style={{
+              width: '44px', height: '24px', borderRadius: '999px',
+              background: weeklyRecap ? 'var(--color-brand)' : 'var(--border-strong)',
+              position: 'relative', cursor: 'pointer',
+              transition: 'background 200ms ease', flexShrink: 0,
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: '2px',
+              left: weeklyRecap ? '22px' : '2px',
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: 'white',
+              transition: 'left 200ms ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }} />
+          </div>
+        </div>
+      </div>
+
+      {/* ─── ACCOUNT SECTION ─── */}
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-xl)',
+        marginBottom: '16px',
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
+        {/* Section header */}
+        <div style={{
+          padding: '16px 20px 12px',
+          borderBottom: '1px solid var(--border-default)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <User size={18} color="var(--color-brand)" />
+          <span style={{ fontSize: '13px', fontWeight: 700,
+            color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '1px' }}>Account</span>
+        </div>
+
+        {/* Row 1: Signed in as */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+              />
+            ) : (
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '50%',
+                background: 'var(--bg-overlay)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: '16px', color: 'var(--text-secondary)'
+              }}>
+                {(user?.displayName || user?.email || '?').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {user?.displayName || 'CineTrack User'}
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                {user?.email}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Sign Out */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          gap: '16px',
+        }}>
+          <button
+            onClick={handleSignOutClick}
+            style={{
+              width: '100%', padding: '12px',
+              background: 'rgba(229,9,20,0.08)',
+              border: '1px solid rgba(229,9,20,0.25)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--color-error)', fontSize: '14px',
+              fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: 8,
+            }}
+          >
+            <LogOut size={16} /> Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* ─── ABOUT SECTION ─── */}
+      <div style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-xl)',
+        marginBottom: '16px',
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
+        {/* Section header */}
+        <div style={{
+          padding: '16px 20px 12px',
+          borderBottom: '1px solid var(--border-default)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Info size={18} color="var(--color-brand)" />
+          <span style={{ fontSize: '13px', fontWeight: 700,
+            color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '1px' }}>About</span>
+        </div>
+
+        {/* Row 1: Version */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>Version</div>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>CineTrack v1.0.0</div>
+        </div>
+
+        {/* Row 2: Built with */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+          gap: '16px',
+        }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>Built with</div>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Firebase · TMDb · React</div>
+        </div>
+
+        {/* Row 3: TMDb Attribution */}
+        <div style={{
+          padding: '16px 20px',
+          gap: '16px',
+        }}>
+          <p style={{
+            fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6',
+            margin: 0,
+          }}>
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </p>
+        </div>
+      </div>
+
     </div>
   )
 }

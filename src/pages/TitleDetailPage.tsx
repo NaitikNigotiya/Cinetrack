@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   ChevronLeft,
@@ -13,6 +13,13 @@ import {
   MoreHorizontal,
   Lightbulb,
   Film,
+  Clock,
+  X,
+  Share2,
+  FolderOpen,
+  FileText,
+  ChevronDown,
+  ListChecks,
 } from 'lucide-react'
 import {
   collection,
@@ -31,17 +38,19 @@ import {
 import { useAuth } from '@/features/auth/useAuth'
 import { useWatchlistEntry } from '@/features/watchlist/hooks/useWatchlistEntry'
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
-import { useWatchlistStore } from '@/features/watchlist/watchlistStore'
+import { useTVSeasons } from '@/features/episodes/hooks/useTVSeasons'
 import { logHistoryEvent, deleteHistoryEvent } from '@/features/history/history'
 import { db, COLLECTIONS } from '@/lib/firebase'
 import {
   getMovieDetails,
   getTVDetails,
   getImageUrl,
-  getTitleImages,
+  getTrailerKey,
 } from '@/lib/tmdb'
 
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { TrailerModal } from '@/components/ui/TrailerModal'
+import { PosterCard } from '@/components/ui/PosterCard'
 
 import type { WatchStatus } from '@/types/app'
 import type { TMDbMovie, TMDbTV } from '@/types/tmdb'
@@ -121,28 +130,260 @@ interface UserReview {
   createdAt?: Timestamp
 }
 
+function EpisodesTabContent({
+  tmdbId, details, entry, onNavigateToTracker
+}: {
+  tmdbId: number
+  details: TMDbTV | null
+  entry: any
+  onNavigateToTracker: () => void
+}) {
+  const [openSeason, setOpenSeason] = useState<number | null>(1)
+  const { data: seasonsData } = useTVSeasons(tmdbId, 
+    details?.seasons?.filter(s => s.season_number > 0).map(s => s.season_number) || []
+  )
+
+  if (!details) return null
+
+  const seasons = details.seasons?.filter(s => s.season_number > 0) || []
+
+  return (
+    <div style={{ padding: '20px 0' }}>
+      
+      {/* Header with Track Episodes button */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', marginBottom: '20px',
+      }}>
+        <div>
+          <div style={{ fontSize: '15px', fontWeight: 700,
+            color: 'var(--text-primary)' }}>
+            {details.number_of_seasons} Seasons · {details.number_of_episodes} Episodes
+          </div>
+          {entry && (
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {entry.episodesWatched || 0} episodes watched
+            </div>
+          )}
+        </div>
+        <button
+          onClick={onNavigateToTracker}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px',
+            background: 'var(--color-brand)', color: 'var(--text-on-brand)',
+            border: 'none', borderRadius: 'var(--radius-md)',
+            fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          📋 Track Episodes
+        </button>
+      </div>
+
+      {/* Season accordions */}
+      {seasons.map(season => {
+        const isOpen = openSeason === season.season_number
+        const seasonDetail = seasonsData?.find(
+          s => s.season_number === season.season_number
+        )
+        const episodes = seasonDetail?.episodes || []
+
+        return (
+          <div key={season.season_number} style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: 'var(--radius-lg)',
+            marginBottom: '10px', overflow: 'hidden',
+          }}>
+            {/* Season header */}
+            <div
+              onClick={() => setOpenSeason(isOpen ? null : season.season_number)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '14px',
+                padding: '14px 16px', cursor: 'pointer',
+                background: isOpen ? 'var(--bg-elevated)' : 'transparent',
+                transition: 'background 150ms ease',
+              }}
+            >
+              {/* Season poster */}
+              {season.poster_path ? (
+                <img
+                  src={getImageUrl(season.poster_path, 'w200') || ''}
+                  alt={`Season ${season.season_number}`}
+                  style={{ width: 40, height: 60, borderRadius: 'var(--radius-sm)',
+                    objectFit: 'cover', flexShrink: 0 }}
+                />
+              ) : (
+                <div style={{ width: 40, height: 60, borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-overlay)', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '18px' }}>🎬</div>
+              )}
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: '15px',
+                  color: 'var(--text-primary)' }}>
+                  Season {season.season_number}
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+                  marginTop: '2px' }}>
+                  {season.episode_count} episodes
+                  {season.air_date && ` · ${new Date(season.air_date).getFullYear()}`}
+                </div>
+              </div>
+
+              <span style={{
+                fontSize: '18px', color: 'var(--text-muted)',
+                transform: isOpen ? 'rotate(180deg)' : 'rotate(0)',
+                transition: 'transform 300ms ease', flexShrink: 0,
+              }}>⌄</span>
+            </div>
+
+            {/* Episodes list */}
+            {isOpen && (
+              <div style={{ borderTop: '1px solid var(--border-default)' }}>
+                {episodes.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center',
+                    color: 'var(--text-muted)', fontSize: '14px' }}>
+                    Loading episodes...
+                  </div>
+                ) : (
+                  episodes.map((ep, idx) => (
+                    <div key={ep.id} style={{
+                      display: 'flex', gap: '14px', padding: '14px 16px',
+                      borderBottom: idx < episodes.length - 1
+                        ? '1px solid var(--border-default)' : 'none',
+                      alignItems: 'flex-start',
+                    }}>
+                      {/* Episode still image */}
+                      {ep.still_path ? (
+                        <img
+                          src={getImageUrl(ep.still_path, 'w200') || ''}
+                          alt={ep.name}
+                          style={{ width: 100, height: 60, borderRadius: 'var(--radius-sm)',
+                            objectFit: 'cover', flexShrink: 0 }}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div style={{ width: 100, height: 60,
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-overlay)', flexShrink: 0,
+                          display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', fontSize: '20px' }}>🎬</div>
+                      )}
+
+                      {/* Episode info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline',
+                          gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700,
+                            color: 'var(--text-muted)', fontFamily: 'monospace',
+                            flexShrink: 0 }}>
+                            E{String(ep.episode_number).padStart(2, '0')}
+                          </span>
+                          <span style={{ fontSize: '14px', fontWeight: 600,
+                            color: 'var(--text-primary)',
+                            overflow: 'hidden', textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap' }}>
+                            {ep.name}
+                          </span>
+                        </div>
+
+                        {/* Overview */}
+                        {ep.overview && (
+                          <p style={{ fontSize: '12px', color: 'var(--text-muted)',
+                            lineHeight: 1.5, margin: 0,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical' as const,
+                            overflow: 'hidden' }}>
+                            {ep.overview}
+                          </p>
+                        )}
+
+                        {/* Meta row */}
+                        <div style={{ display: 'flex', alignItems: 'center',
+                          gap: '12px', marginTop: '6px' }}>
+                          {ep.runtime && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              ⏱ {ep.runtime}m
+                            </span>
+                          )}
+                          {ep.air_date && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              📅 {new Date(ep.air_date).toLocaleDateString()}
+                            </span>
+                          )}
+                          {ep.vote_average > 0 && (
+                            <span style={{ fontSize: '11px', fontWeight: 600,
+                              color: 'var(--star-filled)' }}>
+                              ⭐ {ep.vote_average.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TitleDetailPage() {
   const { id: paramId, titleId } = useParams<{ id?: string; titleId?: string }>()
   const routeId = titleId || paramId || ''
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
 
   const [type, tmdbIdStr] = routeId.split(':')
   const tmdbId = parseInt(tmdbIdStr || '', 10)
   const isMovie = type === 'movie'
+  const mediaType = isMovie ? 'movie' : 'tv'
 
   // Tabs navigation state
-  const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'reviews' | 'similar' | 'images' | 'trivia'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'episodes' | 'cast' | 'reviews' | 'similar' | 'images' | 'trivia'>('overview')
 
   // Lightbox state for images tab
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
+  // Trailer state
+  const [showTrailer, setShowTrailer] = useState(false)
+
+  // ── Firestore Review Sync ──
+  const [reviewsList, setReviewsList] = useState<UserReview[]>([])
+  const [isReviewSheetOpen, setIsReviewSheetOpen] = useState(false)
+  const [editingReview, setEditingReview] = useState<UserReview | null>(null)
+
+  // Review form states
+  const [revTitle, setRevTitle] = useState('')
+  const [revRating, setRevRating] = useState(10)
+  const [revText, setRevText] = useState('')
+  const [revTags, setRevTags] = useState('')
+
+  // ── Local Notes Autosave ──
+  const [localNotes, setLocalNotes] = useState('')
+  const [isSavingNotes, setIsSavingNotes] = useState(false)
+  const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(true)
+
+  // Sheet Controls
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [showAddSheet, setShowAddSheet] = useState(false)
+  const [showStatusSheet, setShowStatusSheet] = useState(false)
+  const [showCollectionSheet, setShowCollectionSheet] = useState(false)
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState<WatchStatus>('plan_to_watch')
+
   // Watchlist hooks
   const { entry, update, remove } = useWatchlistEntry(routeId)
   const { addEntry } = useWatchlist()
-  const titleIds = useWatchlistStore((s) => s.titleIds)
 
   // ── TMDb API Queries ──
   const { data: details, isLoading: isDetailsLoading, isError } = useQuery<TMDbMovie | TMDbTV, Error>({
@@ -152,28 +393,53 @@ export default function TitleDetailPage() {
     staleTime: 15 * 60 * 1000,
   })
 
-  const { data: imagesData } = useQuery({
-    queryKey: ['title-images', type, tmdbId],
-    queryFn: () => getTitleImages(type as 'movie' | 'tv', tmdbId),
-    enabled: !!type && !isNaN(tmdbId),
-    staleTime: 30 * 60 * 1000,
-  })
-
+  // ── Memoized & Derived values from 'details' ──
   const movieDetails = details && isMovie ? details as TMDbMovie : null
   const tvDetails = details && !isMovie ? details as TMDbTV : null
 
-  // ── Firestore Review Sync ──
-  const [reviewsList, setReviewsList] = useState<UserReview[]>([])
-  const [isReviewSheetOpen, setIsReviewSheetOpen] = useState(false)
-  const [isMoreOpen, setIsMoreOpen] = useState(false)
-  const [editingReview, setEditingReview] = useState<UserReview | null>(null)
+  const title = details
+    ? (isMovie ? (details as TMDbMovie).title : (details as TMDbTV).name)
+    : 'Details'
 
-  // Review form states
-  const [revTitle, setRevTitle] = useState('')
-  const [revRating, setRevRating] = useState(10)
-  const [revText, setRevText] = useState('')
-  const [revTags, setRevTags] = useState('')
+  const releaseYear = details
+    ? parseInt((isMovie ? (details as TMDbMovie).release_date : (details as TMDbTV).first_air_date)?.slice(0, 4) || '0')
+    : 0
 
+  const backdrop = details ? getImageUrl(details.backdrop_path, 'original') : null
+  const poster = details ? getImageUrl(details.poster_path, 'w500') : null
+  const ratingAverage = details?.vote_average ? details.vote_average.toFixed(1) : null
+
+  const trailerKey = useMemo(() => {
+    if (!details) return null
+    const videos = (details as any).videos
+    return getTrailerKey(videos)
+  }, [details])
+
+  const similarTitles = useMemo(() => {
+    if (!details) return []
+    return (details as any).similar?.results || []
+  }, [details])
+
+  const images = useMemo(() => {
+    if (!details) return []
+    return (details as any).images?.backdrops?.slice(0, 12) || []
+  }, [details])
+
+  const runtimeString = useMemo(() => {
+    if (isMovie && movieDetails) {
+      const mins = movieDetails.runtime ?? 0
+      if (!mins) return ''
+      const hrs = Math.floor(mins / 60)
+      const remainingMins = mins % 60
+      return hrs > 0 ? `${hrs}h ${remainingMins}m` : `${mins}m`
+    } else if (tvDetails) {
+      const seasonsCount = tvDetails.number_of_seasons
+      return `${seasonsCount} Season${seasonsCount > 1 ? 's' : ''}`
+    }
+    return ''
+  }, [isMovie, movieDetails, tvDetails])
+
+  // ── Effects ──
   useEffect(() => {
     if (!user || !routeId) return
     const q = firestoreQuery(
@@ -186,24 +452,16 @@ export default function TitleDetailPage() {
     })
   }, [user, routeId])
 
-  // ── Local Notes Autosave ──
-  const [localNotes, setLocalNotes] = useState('')
-  const [isSavingNotes, setIsSavingNotes] = useState(false)
-  const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(true)
+  useEffect(() => {
+    setShowMoreMenu(false)
+  }, [location.pathname])
 
-  // Sheet Controls
-  const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false)
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const notesTextareaRef = useRef<HTMLTextAreaElement>(null)
-
-  // Sync inputs
   useEffect(() => {
     if (entry) {
       setLocalNotes(entry.notes || '')
     }
   }, [entry])
 
-  // Debounced notes autosave (800ms)
   useEffect(() => {
     if (!entry) return
     if (localNotes === (entry.notes || '')) return
@@ -222,34 +480,45 @@ export default function TitleDetailPage() {
     return () => clearTimeout(timeout)
   }, [localNotes, entry, update])
 
-  // Helpers
-  const title = details
-    ? (isMovie ? (details as TMDbMovie).title : (details as TMDbTV).name)
-    : 'Details'
+  // Refs & Constants
+  const notesTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const collections: any[] = []
 
-  const releaseYear = details
-    ? parseInt((isMovie ? (details as TMDbMovie).release_date : (details as TMDbTV).first_air_date)?.slice(0, 4) || '0')
-    : 0
-
-  const backdrop = details ? getImageUrl(details.backdrop_path, 'original') : null
-  const poster = details ? getImageUrl(details.poster_path, 'w500') : null
-  const ratingAverage = details?.vote_average ? details.vote_average.toFixed(1) : null
-
-  const runtimeString = useMemo(() => {
-    if (isMovie && movieDetails) {
-      const mins = movieDetails.runtime ?? 0
-      if (!mins) return ''
-      const hrs = Math.floor(mins / 60)
-      const remainingMins = mins % 60
-      return hrs > 0 ? `${hrs}h ${remainingMins}m` : `${mins}m`
-    } else if (tvDetails) {
-      const seasonsCount = tvDetails.number_of_seasons
-      return `${seasonsCount} Season${seasonsCount > 1 ? 's' : ''}`
+  // Handlers
+  const handleRemove = async () => {
+    if (window.confirm('Remove this title from your watchlist?')) {
+      await remove()
+      triggerToast('Removed from watchlist')
     }
-    return ''
-  }, [isMovie, movieDetails, tvDetails])
+  }
 
-  // Toast
+  const handleStatusChange = async (status: WatchStatus) => {
+    if (!entry) return
+    await update({ status })
+    triggerToast(`Status updated to ${status}`)
+  }
+
+  const handleAddToWatchlist = async (status: WatchStatus) => {
+    if (!details || !user || !routeId) return
+    await addEntry({
+      titleId: routeId,
+      type: isMovie ? 'movie' : 'tv',
+      title,
+      posterPath: details.poster_path,
+      backdropPath: details.backdrop_path,
+      year: releaseYear,
+      genres: details.genres.map((g) => g.name),
+      status,
+    })
+    triggerToast('Added to watchlist!')
+  }
+
+  const handleAddToCollection = (_colId: string) => {
+    triggerToast('Collection support not configured.')
+  }
+
+  const isInWatchlist = !!entry
+
   const triggerToast = (msg: string) => {
     setToastMessage(msg)
     setTimeout(() => setToastMessage(null), 2500)
@@ -294,12 +563,7 @@ export default function TitleDetailPage() {
     }
   }
 
-  const handleStatusSelect = async (status: WatchStatus) => {
-    if (!entry) return
-    await update({ status })
-    setIsStatusSheetOpen(false)
-    triggerToast(`Status updated to ${status}`)
-  }
+
 
   const handleRatingSelect = async (val: number) => {
     if (!entry) {
@@ -448,13 +712,13 @@ export default function TitleDetailPage() {
     )
   }
 
-  const currentStatusObj = entry ? STATUS_OPTS.find((o) => o.value === entry.status) : null
+
 
   // Trivia source
   const triviaList = TRIVIA_DATABASE[tmdbId] ?? null
 
   // Image assets list
-  const backdropImages = imagesData?.backdrops?.slice(0, 16) ?? []
+  const backdropImages = images
 
   // Overview grids (Cast `details` to `any` for raw properties not in TypeScript model)
   const detailsAny = details as any
@@ -544,55 +808,176 @@ export default function TitleDetailPage() {
       </section>
 
       {/* ── ACTION BUTTONS ROW ── */}
-      <section className="detail-actions-row">
-        <button className="detail-btn detail-btn--brand" type="button">
-          <Play size={15} fill="currentColor" /> Play Trailer
-        </button>
+      <div style={{
+        display: 'flex', gap: '10px', flexWrap: 'wrap',
+        marginTop: '16px', marginBottom: '8px',
+        padding: '0 24px',
+      }}>
 
-        <button
-          className={`detail-btn ${entry?.status === 'completed' ? 'detail-btn--watched' : ''}`}
-          onClick={handleToggleWatchlist}
-          type="button"
-        >
-          {entry?.status === 'completed' ? (
-            <><Check size={15} /> Watched</>
-          ) : (
-            <><Plus size={15} /> Watch</>
-          )}
-        </button>
-
-        <button
-          className={`detail-btn ${entry?.isFavorite ? 'detail-btn--fav' : ''}`}
-          onClick={handleToggleFavorite}
-          aria-label="Toggle Favorite"
-          type="button"
-        >
-          <Heart size={15} fill={entry?.isFavorite ? 'currentColor' : 'none'} /> Favorite
-        </button>
-
-        <div style={{ position: 'relative' }}>
-          <button className="detail-btn detail-btn--more" onClick={() => setIsMoreOpen(!isMoreOpen)} aria-label="More Options" type="button">
-            <MoreHorizontal size={15} />
+        {/* 1. PRIMARY — Add to Watchlist / Status button */}
+        {!isInWatchlist ? (
+          <button onClick={() => setShowAddSheet(true)} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 20px',
+            background: 'var(--color-brand)',
+            color: 'var(--text-on-brand)',
+            border: 'none', borderRadius: 'var(--radius-md)',
+            fontWeight: 700, fontSize: '14px', cursor: 'pointer',
+          }}>
+            <Plus size={16} /> Add to Watchlist
           </button>
-          {isMoreOpen && (
-            <div className="detail-more-dropdown animate-fade-in" style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: 6, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 100, minWidth: 140, boxShadow: 'var(--card-shadow)' }}>
-              <button className="detail-dropdown-item" onClick={() => { setIsMoreOpen(false); alert('Collection feature coming soon'); }} style={{ padding: '8px 12px', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', textAlign: 'left', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                Add to Collection
-              </button>
-              <button className="detail-dropdown-item" onClick={() => { setIsMoreOpen(false); handleShare(); }} style={{ padding: '8px 12px', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', textAlign: 'left', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                Share Link
-              </button>
-              <button className="detail-dropdown-item" onClick={() => { setIsMoreOpen(false); alert('Title reported successfully'); }} style={{ padding: '8px 12px', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', textAlign: 'left', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                Report Title
-              </button>
-            </div>
+        ) : (
+          <button onClick={() => setShowStatusSheet(true)} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 20px',
+            background: 'var(--color-brand)',
+            color: 'var(--text-on-brand)',
+            border: 'none', borderRadius: 'var(--radius-md)',
+            fontWeight: 700, fontSize: '14px', cursor: 'pointer',
+          }}>
+            {entry?.status === 'watching' && <><Play size={14} fill="currentColor" /> Watching</>}
+            {entry?.status === 'completed' && <><Check size={14} /> Completed</>}
+            {entry?.status === 'plan_to_watch' && <><Clock size={14} /> Plan to Watch</>}
+            {entry?.status === 'dropped' && <><X size={14} /> Dropped</>}
+            <ChevronDown size={14} />
+          </button>
+        )}
+
+        {/* Track Episodes button (only for TV shows in watchlist) */}
+        {isInWatchlist && !isMovie && (
+          <button onClick={() => navigate(`/title/${routeId}/episodes`)} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 18px',
+            background: 'var(--bg-elevated)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-md)',
+            fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+          }}>
+            <ListChecks size={14} /> Track Episodes
+          </button>
+        )}
+
+        {/* 2. Play Trailer */}
+        <button onClick={() => setShowTrailer(true)} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 18px',
+          background: 'var(--bg-elevated)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 'var(--radius-md)',
+          fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+        }}>
+          <Play size={14} fill="currentColor" /> Trailer
+        </button>
+
+        {/* 3. Favorite toggle */}
+        <button onClick={handleToggleFavorite} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 18px',
+          background: entry?.isFavorite ? 'rgba(229,9,20,0.1)' : 'var(--bg-elevated)',
+          color: entry?.isFavorite ? '#E50914' : 'var(--text-secondary)',
+          border: `1px solid ${entry?.isFavorite ? 'rgba(229,9,20,0.4)' : 'var(--border-default)'}`,
+          borderRadius: 'var(--radius-md)',
+          fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+          transition: 'all 200ms ease',
+        }}>
+          <Heart size={14} fill={entry?.isFavorite ? 'currentColor' : 'none'} />
+          {entry?.isFavorite ? 'Favorited' : 'Favorite'}
+        </button>
+
+        {/* 4. More actions dropdown trigger */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowMoreMenu(!showMoreMenu)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 14px',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 'var(--radius-md)',
+              fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+            }}
+          >
+            <MoreHorizontal size={16} /> More
+          </button>
+
+          {/* Dropdown menu */}
+          {showMoreMenu && (
+            <>
+              {/* Click outside to close */}
+              <div
+                onClick={() => setShowMoreMenu(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+              />
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                zIndex: 100, minWidth: '200px',
+                overflow: 'hidden',
+              }}>
+                {[
+                  { icon: <FolderOpen size={15} />, label: 'Add to Collection', action: () => { setShowMoreMenu(false); setShowCollectionSheet(true) } },
+                  { icon: <Star size={15} />, label: 'Rate this title', action: () => { setShowMoreMenu(false); document.getElementById('rating-section')?.scrollIntoView({ behavior: 'smooth' }) } },
+                  { icon: <FileText size={15} />, label: 'Write a Review', action: () => { setShowMoreMenu(false); navigate('/reviews') } },
+                  { icon: <Share2 size={15} />, label: 'Share', action: () => { setShowMoreMenu(false); handleShare() } },
+                  ...(isInWatchlist ? [{ icon: <Trash2 size={15} color="var(--color-error)" />, label: 'Remove from Watchlist', action: () => { setShowMoreMenu(false); handleRemove() }, danger: true }] : []),
+                ].map((item, i) => (
+                  <button key={i} onClick={item.action} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', padding: '12px 16px',
+                    background: 'none', border: 'none',
+                    borderBottom: '1px solid var(--border-default)',
+                    color: item.danger ? 'var(--color-error)' : 'var(--text-primary)',
+                    fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-overlay)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    {item.icon} {item.label}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
-      </section>
+      </div>
 
       {/* ── TABS NAVIGATION ── */}
       <nav className="detail-tab-bar">
-        {(['overview', 'cast', 'reviews', 'similar', 'images', 'trivia'] as const).map((tab) => (
+        <button
+          className={`detail-tab-btn ${activeTab === 'overview' ? 'detail-tab-btn--active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+          type="button"
+        >
+          Overview
+        </button>
+
+        {mediaType === 'tv' && (
+          <button
+            onClick={() => setActiveTab('episodes')}
+            style={{
+              padding: '12px 20px',
+              fontSize: '14px', fontWeight: activeTab === 'episodes' ? 600 : 500,
+              color: activeTab === 'episodes' ? 'var(--color-brand)' : 'var(--text-muted)',
+              borderBottom: activeTab === 'episodes'
+                ? '2px solid var(--color-brand)' : '2px solid transparent',
+              background: 'none', border: 'none',
+              cursor: 'pointer', whiteSpace: 'nowrap',
+              transition: 'all 150ms ease',
+            }}
+            type="button"
+          >
+            Episodes
+          </button>
+        )}
+
+        {(['cast', 'reviews', 'similar', 'images', 'trivia'] as const).map((tab) => (
           <button
             key={tab}
             className={`detail-tab-btn ${activeTab === tab ? 'detail-tab-btn--active' : ''}`}
@@ -674,20 +1059,7 @@ export default function TitleDetailPage() {
             {/* Status & Personal Section (If in watchlist) */}
             {entry && (
               <>
-                <section className="detail-card">
-                  <h3 className="detail-card-title">Status Management</h3>
-                  <div className="detail-status-row">
-                    {currentStatusObj && (
-                      <div className="detail-status-pill-indicator">
-                        <span className="detail-status-dot-large" style={{ background: currentStatusObj.color }} />
-                        <span>{currentStatusObj.label}</span>
-                      </div>
-                    )}
-                    <button className="detail-btn detail-btn--brand" onClick={() => setIsStatusSheetOpen(true)} type="button">
-                      Change Status
-                    </button>
-                  </div>
-                </section>
+
 
                 <section className="detail-card">
                   <h3 className="detail-card-title">Personal rating</h3>
@@ -813,6 +1185,18 @@ export default function TitleDetailPage() {
           </div>
         )}
 
+        {/* ── EPISODES TAB ── */}
+        {activeTab === 'episodes' && mediaType === 'tv' && (
+          <div className="tab-pane animate-fade-in">
+            <EpisodesTabContent
+              tmdbId={tmdbId}
+              details={details as TMDbTV}
+              entry={entry}
+              onNavigateToTracker={() => navigate(`/title/${routeId}/episodes`)}
+            />
+          </div>
+        )}
+
         {/* ── CAST TAB ── */}
         {activeTab === 'cast' && (
           <div className="tab-pane animate-fade-in">
@@ -886,63 +1270,75 @@ export default function TitleDetailPage() {
 
         {/* ── SIMILAR TAB ── */}
         {activeTab === 'similar' && (
-          <div className="tab-pane animate-fade-in">
-            {details.similar?.results && details.similar.results.length > 0 ? (
-              <div className="sp-results-grid">
-                {details.similar.results.slice(0, 10).map((sim) => {
-                  const simId = `${sim.media_type || (isMovie ? 'movie' : 'tv')}:${sim.id}`
-                  const poster = getImageUrl(sim.poster_path, 'w500')
-                  const rating = sim.vote_average > 0 ? sim.vote_average.toFixed(1) : null
-                  const year = (sim.release_date ?? sim.first_air_date)?.slice(0, 4) ?? '—'
-                  const title = sim.title ?? sim.name ?? 'Untitled'
-                  const inList = titleIds.includes(simId)
-
-                  return (
-                    <article
-                      key={sim.id}
-                      className="sp-card"
-                      onClick={() => navigate(`/watchlist/${encodeURIComponent(simId)}`)}
-                    >
-                      <div className="sp-card-poster-wrap">
-                        {poster ? (
-                          <img src={poster} alt={title} className="sp-card-poster" loading="lazy" />
-                        ) : (
-                          <div className="sp-card-no-poster"><Film size={32} color="var(--text-muted)" /></div>
-                        )}
-                        <div className="sp-card-gradient" />
-                        <div className="sp-card-overlay-text">
-                          <p className="sp-card-overlay-title">{title}</p>
-                          <p className="sp-card-overlay-year">{year}</p>
-                        </div>
-                        {rating && <span className="sp-card-rating-badge">⭐ {rating}</span>}
-                        {inList && <span className="sp-card-added-badge" style={{ position: 'absolute', top: 5, right: 5, background: 'var(--color-success)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-sm)' }}>✓ Added</span>}
-                      </div>
-                    </article>
-                  )
-                })}
+          <div style={{ padding: '20px 0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700,
+              color: 'var(--text-primary)', marginBottom: '16px' }}>
+              More Like This
+            </h3>
+            {similarTitles && similarTitles.length > 0 ? (
+              <div className="poster-grid">
+                {similarTitles.slice(0, 18).map((item: any) => (
+                  <PosterCard
+                    key={item.id}
+                    title={item.title || item.name || ''}
+                    year={item.release_date
+                      ? new Date(item.release_date).getFullYear()
+                      : item.first_air_date
+                      ? new Date(item.first_air_date).getFullYear()
+                      : null}
+                    posterPath={item.poster_path}
+                    rating={item.vote_average}
+                    type={mediaType as 'movie' | 'tv'}
+                    onClick={() => navigate(`/title/${mediaType}:${item.id}`)}
+                  />
+                ))}
               </div>
             ) : (
-              <p className="detail-tab-empty">No similar titles found.</p>
+              <div style={{ textAlign: 'center', padding: '40px',
+                color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎬</div>
+                <div style={{ fontSize: '15px', fontWeight: 600,
+                  color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  No similar titles found
+                </div>
+              </div>
             )}
           </div>
         )}
 
         {/* ── IMAGES TAB ── */}
         {activeTab === 'images' && (
-          <div className="tab-pane animate-fade-in">
-            {backdropImages.length > 0 ? (
-              <div className="detail-images-grid">
-                {backdropImages.map((img, idx) => {
-                  const url = getImageUrl(img.file_path, 'w500')
-                  return (
-                    <div key={idx} className="detail-img-card" onClick={() => setLightboxIndex(idx)}>
-                      <img src={url!} alt={`Backdrop ${idx + 1}`} className="detail-img-thumb" loading="lazy" />
-                    </div>
-                  )
-                })}
+          <div style={{ padding: '20px 0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700,
+              color: 'var(--text-primary)', marginBottom: '16px' }}>
+              Images
+            </h3>
+            {images && images.length > 0 ? (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '8px',
+              }}>
+                {images.slice(0, 12).map((img: any, idx: number) => (
+                  <div key={idx} onClick={() => setLightboxIndex(idx)} style={{
+                    borderRadius: 'var(--radius-md)', overflow: 'hidden',
+                    aspectRatio: '16/9', background: 'var(--bg-elevated)',
+                    cursor: 'pointer',
+                  }}>
+                    <img
+                      src={getImageUrl(img.file_path, 'w780') || ''}
+                      alt={`Image ${idx + 1}`}
+                      loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                ))}
               </div>
             ) : (
-              <p className="detail-tab-empty">No images available.</p>
+              <div style={{ textAlign: 'center', padding: '40px',
+                color: 'var(--text-muted)' }}>
+                No images available
+              </div>
             )}
           </div>
         )}
@@ -1003,34 +1399,168 @@ export default function TitleDetailPage() {
       )}
 
       {/* ── Watch Status bottom sheet ── */}
-      <BottomSheet
-        isOpen={isStatusSheetOpen}
-        onClose={() => setIsStatusSheetOpen(false)}
-        label="Select Watch Status"
-      >
-        <div className="status-sheet-content">
-          <p className="filter-sheet-title" style={{ padding: '0 0 16px' }}>Update Status</p>
-          <div className="status-picker-list" role="radiogroup" aria-label="Watch Status Options">
-            {STATUS_OPTS.map((opt) => {
-              const isActive = entry?.status === opt.value
-              return (
-                <div
-                  key={opt.value}
-                  className={`status-picker-item${isActive ? ' status-picker-item--active' : ''}`}
-                  onClick={() => handleStatusSelect(opt.value)}
-                  role="radio"
-                  aria-checked={isActive}
-                >
-                  <div className="status-picker-icon-box" style={{ background: opt.color, color: '#fff' }} aria-hidden="true">
-                    <span>{opt.emoji}</span>
-                  </div>
-                  <div className="status-picker-details">
-                    <p className="status-picker-label">{opt.label}</p>
-                    <p className="status-picker-desc">{opt.desc}</p>
-                  </div>
+      <BottomSheet isOpen={showStatusSheet} onClose={() => setShowStatusSheet(false)}>
+        <div style={{ padding: '20px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700,
+            color: 'var(--text-primary)', marginBottom: '16px' }}>
+            Update Status
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {STATUS_OPTS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => { handleStatusChange(opt.value); setShowStatusSheet(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  padding: '14px 16px',
+                  background: entry?.status === opt.value
+                    ? 'var(--bg-overlay)' : 'var(--bg-elevated)',
+                  border: `1px solid ${entry?.status === opt.value
+                    ? opt.color : 'var(--border-default)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer', width: '100%', textAlign: 'left',
+                  boxShadow: entry?.status === opt.value
+                    ? `inset 3px 0 0 ${opt.color}` : 'none',
+                  transition: 'all 150ms ease',
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>{opt.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: '14px', fontWeight: 600,
+                    color: entry?.status === opt.value ? opt.color : 'var(--text-primary)',
+                  }}>{opt.label}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)',
+                    marginTop: '2px' }}>{opt.desc}</div>
                 </div>
-              )
-            })}
+                {entry?.status === opt.value && (
+                  <Check size={16} color={opt.color} />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Remove from watchlist option at bottom */}
+          {isInWatchlist && (
+            <button
+              onClick={() => { handleRemove(); setShowStatusSheet(false) }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 8, width: '100%', marginTop: '12px', padding: '12px',
+                background: 'rgba(229,9,20,0.08)',
+                border: '1px solid rgba(229,9,20,0.25)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--color-error)', fontSize: '14px',
+                fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              <Trash2 size={14} /> Remove from Watchlist
+            </button>
+          )}
+        </div>
+      </BottomSheet>
+
+      {/* ── Add to Watchlist bottom sheet ── */}
+      <BottomSheet isOpen={showAddSheet} onClose={() => setShowAddSheet(false)}>
+        <div style={{ padding: '20px' }}>
+          {/* Title preview */}
+          <div style={{ display: 'flex', gap: '14px', marginBottom: '20px',
+            paddingBottom: '16px', borderBottom: '1px solid var(--border-default)' }}>
+            <img src={getImageUrl(details?.poster_path, 'w200') || ''} alt={title}
+              style={{ width: 56, height: 84, borderRadius: 'var(--radius-md)',
+                objectFit: 'cover', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '16px',
+                color: 'var(--text-primary)' }}>{title}</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)',
+                marginTop: '4px' }}>{releaseYear} · {isMovie ? 'Movie' : 'TV Show'}</div>
+            </div>
+          </div>
+
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)',
+            textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
+            Add as
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px',
+            marginBottom: '16px' }}>
+            {STATUS_OPTS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setSelectedStatus(opt.value)}
+                style={{
+                  padding: '12px', borderRadius: 'var(--radius-md)',
+                  border: `1px solid ${selectedStatus === opt.value
+                    ? opt.color : 'var(--border-default)'}`,
+                  background: selectedStatus === opt.value
+                    ? 'var(--bg-overlay)' : 'var(--bg-elevated)',
+                  cursor: 'pointer', textAlign: 'center',
+                  boxShadow: selectedStatus === opt.value
+                    ? `0 0 0 1px ${opt.color}` : 'none',
+                }}
+              >
+                <div style={{ fontSize: '20px', marginBottom: '4px' }}>{opt.emoji}</div>
+                <div style={{
+                  fontSize: '12px', fontWeight: 600,
+                  color: selectedStatus === opt.value ? opt.color : 'var(--text-secondary)',
+                }}>{opt.label}</div>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => { handleAddToWatchlist(selectedStatus); setShowAddSheet(false) }}
+            style={{
+              width: '100%', padding: '14px',
+              background: 'var(--color-brand)', color: 'var(--text-on-brand)',
+              border: 'none', borderRadius: 'var(--radius-md)',
+              fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Add to Watchlist
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* ── Add to Collection bottom sheet ── */}
+      <BottomSheet isOpen={showCollectionSheet} onClose={() => setShowCollectionSheet(false)}>
+        <div style={{ padding: '20px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700,
+            color: 'var(--text-primary)', marginBottom: '16px' }}>
+            Add to Collection
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {collections.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px',
+                color: 'var(--text-muted)', fontSize: '14px' }}>
+                No collections yet.{' '}
+                <span
+                  onClick={() => { setShowCollectionSheet(false); navigate('/collections') }}
+                  style={{ color: 'var(--color-brand)', cursor: 'pointer', fontWeight: 600 }}
+                >Create one →</span>
+              </div>
+            ) : (
+              collections.map((col: any) => (
+                <button key={col.id} onClick={() => handleAddToCollection(col.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 14px', background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                    textAlign: 'left', width: '100%',
+                  }}
+                >
+                  <FolderOpen size={18} color="var(--color-brand)" />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '14px',
+                      color: 'var(--text-primary)' }}>{col.name}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {col.titleIds?.length || 0} titles
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
       </BottomSheet>
@@ -1102,6 +1632,13 @@ export default function TitleDetailPage() {
           {toastMessage}
         </div>
       )}
+
+      <TrailerModal
+        isOpen={showTrailer}
+        onClose={() => setShowTrailer(false)}
+        videoKey={trailerKey}
+        title={title || ''}
+      />
     </div>
   )
 }

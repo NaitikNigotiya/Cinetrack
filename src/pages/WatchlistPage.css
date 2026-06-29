@@ -411,106 +411,6 @@
   background: rgba(255,255,255,0.25);
 }
 
-.wl-status-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.wl-grid-card {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-default);
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  display: flex;
-  flex-direction: column;
-}
-
-.wl-grid-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-shadow);
-}
-
-.wl-grid-poster-wrap {
-  position: relative;
-  aspect-ratio: 2/3;
-  background: var(--bg-elevated);
-}
-
-.wl-grid-poster-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.wl-grid-no-poster {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-}
-
-.wl-grid-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
-  pointer-events: none;
-}
-
-.wl-grid-status-badge {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  color: #fff;
-  font-size: 8px;
-  font-weight: 700;
-  padding: 1px 4px;
-  border-radius: var(--radius-xs);
-  text-transform: uppercase;
-}
-
-.wl-grid-rating-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.65);
-  color: var(--star-filled);
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 4px;
-  border-radius: var(--radius-xs);
-}
-
-.wl-grid-info {
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.wl-grid-card-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-  line-clamp: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.wl-grid-card-year {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin: 2px 0 0 0;
-}
-
 .wl-tab-empty-msg {
   text-align: center;
   color: var(--text-muted);
@@ -755,10 +655,5 @@
   .wl-smart-column {
     flex: unset;
     max-height: calc(100vh - 210px);
-  }
-
-  .wl-status-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
   }
 }
