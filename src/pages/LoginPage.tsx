@@ -102,19 +102,19 @@ export default function LoginPage() {
         )}
 
         {/* Logo */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '56px', lineHeight: 1 }} aria-hidden="true">🎬</span>
-          <span
-            style={{
-              fontSize: 'var(--text-3xl)',
-              fontWeight: 800,
-              color: 'var(--color-brand)',
-              letterSpacing: '-1px',
-              fontFamily: 'var(--font-family)',
-            }}
-          >
-            CineTrack
-          </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: 18, background: '#E50914',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40,
+          }}>🎬</div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 1, color: 'var(--text-primary)' }}>
+              CINE<span style={{ color: '#E50914' }}>TRACK</span>
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase' }}>
+              Track · Rate · Remember
+            </div>
+          </div>
         </div>
 
         {/* Tagline */}

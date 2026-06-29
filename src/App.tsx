@@ -20,6 +20,15 @@ import SettingsPage from '@/pages/SettingsPage'
 import EpisodeTrackerPage from '@/pages/EpisodeTrackerPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
+// ── New Pages ───────────────────────────────────────────────────────────────
+import DiscoverPage from '@/pages/DiscoverPage'
+import WatchingPage from '@/pages/WatchingPage'
+import CompletedPage from '@/pages/CompletedPage'
+import CollectionsPage from '@/pages/CollectionsPage'
+import CalendarPage from '@/pages/CalendarPage'
+import ReviewsPage from '@/pages/ReviewsPage'
+import NotesPage from '@/pages/NotesPage'
+
 // ─── Router ───────────────────────────────────────────────────────────────────
 
 const router = createBrowserRouter([
@@ -39,9 +48,17 @@ const router = createBrowserRouter([
     children: [
       { path: '/',              element: <HomePage /> },
       { path: '/search',        element: <SearchPage /> },
+      { path: '/discover',      element: <DiscoverPage /> },
       { path: '/watchlist',     element: <WatchlistPage /> },
       { path: '/watchlist/:id', element: <TitleDetailPage /> },
+      { path: '/title/:id',     element: <TitleDetailPage /> },
       { path: '/watchlist/:id/episodes', element: <EpisodeTrackerPage /> },
+      { path: '/watching',      element: <WatchingPage /> },
+      { path: '/completed',     element: <CompletedPage /> },
+      { path: '/collections',   element: <CollectionsPage /> },
+      { path: '/calendar',      element: <CalendarPage /> },
+      { path: '/reviews',       element: <ReviewsPage /> },
+      { path: '/notes',         element: <NotesPage /> },
       { path: '/analytics',     element: <AnalyticsPage /> },
       { path: '/favorites',     element: <FavoritesPage /> },
       { path: '/history',       element: <HistoryPage /> },

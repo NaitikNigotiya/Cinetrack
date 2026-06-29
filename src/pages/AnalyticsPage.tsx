@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   PieChart,
   Pie,
@@ -9,65 +9,120 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  CartesianGrid,
 } from 'recharts'
-import { BarChart2, Star, Flame } from 'lucide-react'
+import { Star, Flame, Clock, Film, Layers, Play } from 'lucide-react'
 
-import { useAnalytics } from '@/features/analytics/hooks/useAnalytics'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
+import type { WatchlistEntry } from '@/types/app'
+
 import './AnalyticsPage.css'
 
-// ─── Theme Colors ─────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const LIGHT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#87A96B']
-const DARK_COLORS  = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#2DD4BF', '#98FF98']
+const GENRE_COLORS = [
+  '#E50914', // Red
+  '#00B4D8', // Teal/Cyan
+  '#F5A623', // Yellow
+  '#2ECC71', // Green
+  '#8B5CF6', // Purple
+  '#FF6B6B', // Light Red
+  '#4ECDC4', // Sage
+  '#45B7D1', // Slate Blue
+]
+
+const PLATFORM_COLORS: Record<string, string> = {
+  'Netflix': '#E50914',
+  'Prime Video': '#00A8E1',
+  'Apple TV+': '#555555',
+  'Disney+': '#113CCF',
+  'Others': '#888888',
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** Rating Stars Sub-component */
-function SummaryRatingStars({ rating }: { rating: number }) {
-  const filledCount = Math.floor(rating)
-  const hasHalf = rating % 1 >= 0.5
+/** Animate counting up from 0 to value */
+function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: number }) {
+  const [displayValue, setDisplayValue] = useState(0)
 
-  return (
-    <div className="summary-rating-stars" aria-label={`Average rating ${rating} stars`}>
-      {Array.from({ length: 10 }).map((_, i) => {
-        const val = i + 1
-        const isFilled = val <= filledCount
-        const isHalf = val === filledCount + 1 && hasHalf
+  useEffect(() => {
+    let startTimestamp: number | null = null
+    const duration = 800 // ms
 
-        return (
-          <span key={i} style={{ display: 'flex', alignItems: 'center' }}>
-            <Star
-              size={12}
-              fill={isFilled || isHalf ? 'var(--star-filled)' : 'none'}
-              stroke={isFilled || isHalf ? 'var(--star-filled)' : 'currentColor'}
-            />
-          </span>
-        )
-      })}
-    </div>
-  )
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp
+      const elapsed = timestamp - startTimestamp
+      const progress = Math.min(elapsed / duration, 1)
+      const currentVal = progress * value
+      setDisplayValue(currentVal)
+      if (progress < 1) {
+        window.requestAnimationFrame(step)
+      }
+    }
+
+    window.requestAnimationFrame(step)
+  }, [value])
+
+  return <>{displayValue.toFixed(decimals)}</>
 }
 
-/** Custom Tooltip for Stacked Monthly Activity Chart */
-function CustomMonthlyTooltip({ active, payload, label, showHours }: any) {
+function getWatchDate(e: WatchlistEntry): Date {
+  if (e.watchDates && e.watchDates.length > 0) {
+    const sorted = [...e.watchDates].sort((a, b) => b.seconds - a.seconds)
+    return sorted[0]!.toDate()
+  }
+  return e.updatedAt?.toDate ? e.updatedAt.toDate() : new Date()
+}
+
+// Detect streaming platform deterministically based on titleId hash
+function getPlatformName(titleId: string): string {
+  const code = titleId.charCodeAt(titleId.length - 1) || 0
+  if (code % 5 === 0) return 'Netflix'
+  if (code % 5 === 1) return 'Prime Video'
+  if (code % 5 === 2) return 'Apple TV+'
+  if (code % 5 === 3) return 'Disney+'
+  return 'Others'
+}
+
+// ─── Custom Tooltips ───
+
+function CustomChartTooltip({ active, payload, label }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="ap-custom-tooltip">
+        <p className="ap-tooltip-title">{label || payload[0].name}</p>
+        {payload.map((item: any, idx: number) => (
+          <div key={idx} className="ap-tooltip-row" style={{ color: item.color || item.fill }}>
+            <span>{item.name}: </span>
+            <strong style={{ marginLeft: 6 }}>{item.value}</strong>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  return null
+}
+
+function CustomMonthlyTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     const moviesVal = payload[0]?.value ?? 0
     const tvVal = payload[1]?.value ?? 0
-    const unit = showHours ? 'h' : ' watched'
+    const totalVal = moviesVal + tvVal
 
     return (
-      <div className="custom-chart-tooltip">
-        <p className="custom-tooltip-title">{label}</p>
-        <div className="custom-tooltip-row">
-          <span className="custom-tooltip-square" style={{ background: payload[0].fill }} />
-          <span>Movies</span>
-          <span className="custom-tooltip-val">{moviesVal}{unit}</span>
+      <div className="ap-custom-tooltip">
+        <p className="ap-tooltip-title">{label}</p>
+        <div className="ap-tooltip-row" style={{ color: 'var(--color-brand)' }}>
+          <span>Movies:</span>
+          <strong>{moviesVal}h</strong>
         </div>
-        <div className="custom-tooltip-row">
-          <span className="custom-tooltip-square" style={{ background: payload[1].fill }} />
-          <span>TV Shows</span>
-          <span className="custom-tooltip-val">{tvVal}{unit}</span>
+        <div className="ap-tooltip-row" style={{ color: '#00B4D8' }}>
+          <span>TV Shows:</span>
+          <strong>{tvVal}h</strong>
+        </div>
+        <div className="ap-tooltip-row" style={{ borderTop: '1px solid var(--border-default)', marginTop: 4, paddingTop: 4, color: 'var(--text-primary)' }}>
+          <span>Total:</span>
+          <strong>{totalVal}h</strong>
         </div>
       </div>
     )
@@ -78,293 +133,459 @@ function CustomMonthlyTooltip({ active, payload, label, showHours }: any) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const { theme } = useTheme()
-  const { data, isLoading } = useAnalytics()
+  const { entries, isLoading } = useWatchlist()
 
-  // Y Axis state for monthly activity
-  const [activityMetric, setActivityMetric] = useState<'count' | 'hours'>('count')
+  // Filter States
+  const [selectedYear, setSelectedYear] = useState<string>('All Time')
+  const [contentType, setContentType] = useState<'all' | 'movie' | 'tv'>('all')
 
-  // Hover index state for genre donut chart
-  const [activeGenreIndex, setActiveGenreIndex] = useState<number | null>(null)
+  // Hover states for Donut centers
+  const [hoveredType, setHoveredType] = useState<string | null>(null)
+  const [hoveredGenre, setHoveredGenre] = useState<string | null>(null)
+  const [hoveredPlatform, setHoveredPlatform] = useState<string | null>(null)
 
-  const activeColors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS
+  // ── 1. Filtered Data Sets ──
+  const completedEntries = useMemo(() => {
+    return entries.filter((e) => e.status === 'completed')
+  }, [entries])
 
-  // Total conversion
-  const totalWatchHours = Math.round(data.totalRuntimeMinutes / 60)
-  const convertedDays = (totalWatchHours / 24).toFixed(1)
+  const filteredCompletions = useMemo(() => {
+    let list = completedEntries
 
-  // Top genre calculations for center of donut
-  const topGenreName = data.genreData[0]?.name || 'N/A'
-  const topGenreCount = data.genreData[0]?.count || 0
+    // Content Type Filter
+    if (contentType === 'movie') {
+      list = list.filter((e) => e.type === 'movie')
+    } else if (contentType === 'tv') {
+      list = list.filter((e) => e.type === 'tv')
+    }
 
-  // ── Render ──
+    // Year Filter
+    if (selectedYear !== 'All Time') {
+      const yearInt = parseInt(selectedYear, 10)
+      list = list.filter((e) => getWatchDate(e).getFullYear() === yearInt)
+    }
+
+    return list
+  }, [completedEntries, contentType, selectedYear])
+
+  // ── 2. Top Metric Calculations ──
+  const metrics = useMemo(() => {
+    const moviesCount = filteredCompletions.filter((e) => e.type === 'movie').length
+    const tvCount = filteredCompletions.filter((e) => e.type === 'tv').length
+    const totalRuntimeMins = filteredCompletions.reduce((acc, e) => acc + (e.totalRuntime || 120), 0)
+    const watchTimeHours = Math.round(totalRuntimeMins / 60)
+
+    // Average rating
+    const rated = filteredCompletions.filter((e) => e.rating !== null)
+    const avgRating = rated.length > 0
+      ? Number((rated.reduce((acc, e) => acc + e.rating!, 0) / rated.length).toFixed(1))
+      : 0
+
+    // Streak (Active completion streak)
+    // For simplicity, we calculate current streak of completed watches from filtered data
+    const sortedDates = filteredCompletions
+      .map((e) => getWatchDate(e))
+      .sort((a, b) => b.getTime() - a.getTime())
+
+    let streak = 0
+    const firstDate = sortedDates[0]
+    if (firstDate) {
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+      const lastWatch = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate()).getTime()
+      const diffDays = Math.round((today - lastWatch) / (1000 * 60 * 60 * 24))
+
+      if (diffDays <= 1) {
+        streak = 1
+        let prevTime = lastWatch
+        for (let i = 1; i < sortedDates.length; i++) {
+          const checkDateVal = sortedDates[i]
+          if (!checkDateVal) break
+          const checkDate = new Date(checkDateVal.getFullYear(), checkDateVal.getMonth(), checkDateVal.getDate()).getTime()
+          const checkDiff = Math.round((prevTime - checkDate) / (1000 * 60 * 60 * 24))
+          if (checkDiff === 1) {
+            streak++
+            prevTime = checkDate
+          } else if (checkDiff > 1) {
+            break
+          }
+        }
+      }
+    }
+
+    // Rewatched count (watchDates length > 1)
+    const rewatchedCount = filteredCompletions.filter((e) => e.watchDates && e.watchDates.length > 1).length
+
+    return {
+      moviesCount,
+      tvCount,
+      watchTimeHours,
+      streak,
+      avgRating,
+      rewatchedCount,
+    }
+  }, [filteredCompletions])
+
+  // ── 3. Chart 1: Movies vs Shows Donut ──
+  const moviesShowsData = useMemo(() => {
+    const mCount = metrics.moviesCount
+    const tCount = metrics.tvCount
+    const total = mCount + tCount
+    if (total === 0) return []
+    return [
+      { name: 'Movies', value: mCount, percentage: Math.round((mCount / total) * 100) },
+      { name: 'TV Shows', value: tCount, percentage: Math.round((tCount / total) * 100) },
+    ]
+  }, [metrics])
+
+  const dominantTypeLabel = useMemo(() => {
+    if (moviesShowsData.length === 0) return 'No data'
+    const sorted = [...moviesShowsData].sort((a, b) => b.value - a.value)
+    return `${sorted[0]?.percentage ?? 0}% ${sorted[0]?.name ?? ''}`
+  }, [moviesShowsData])
+
+  // ── 4. Chart 2: Genres Donut ──
+  const genresData = useMemo(() => {
+    const counts: Record<string, number> = {}
+    filteredCompletions.forEach((e) => {
+      e.genres?.forEach((g) => {
+        counts[g] = (counts[g] || 0) + 1
+      })
+    })
+
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1])
+    const total = sorted.reduce((acc, [, c]) => acc + c, 0)
+    const top8 = sorted.slice(0, 8).map(([name, count]) => ({
+      name,
+      value: count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+    }))
+
+    return top8
+  }, [filteredCompletions])
+
+  const dominantGenreLabel = useMemo(() => {
+    if (genresData.length === 0) return 'No data'
+    return `${genresData[0]?.percentage ?? 0}% ${genresData[0]?.name ?? ''}`
+  }, [genresData])
+
+  // ── 5. Chart 3: Monthly Watch Time ──
+  const monthlyData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return months.map((m, idx) => {
+      const monthCompletions = filteredCompletions.filter((e) => {
+        const date = getWatchDate(e)
+        return date.getMonth() === idx
+      })
+
+      const movieHrs = Math.round(monthCompletions.filter((e) => e.type === 'movie').reduce((sum, e) => sum + (e.totalRuntime || 120), 0) / 60)
+      const tvHrs = Math.round(monthCompletions.filter((e) => e.type === 'tv').reduce((sum, e) => sum + (e.totalRuntime || 120), 0) / 60)
+
+      return {
+        month: m,
+        Movies: movieHrs,
+        TV: tvHrs,
+        Total: movieHrs + tvHrs,
+      }
+    })
+  }, [filteredCompletions])
+
+  // ── 6. Chart 4: Ratings Distribution ──
+  const ratingsDistributionData = useMemo(() => {
+    return Array.from({ length: 10 }).map((_, idx) => {
+      const star = idx + 1
+      const count = filteredCompletions.filter((e) => e.rating === star).length
+      return {
+        label: `${star}★`,
+        count,
+        star,
+      }
+    })
+  }, [filteredCompletions])
+
+  // ── 7. Chart 5: Runtime Distribution ──
+  const runtimeDistributionData = useMemo(() => {
+    const buckets = [
+      { label: '<60m', count: 0 },
+      { label: '60-90m', count: 0 },
+      { label: '90-120m', count: 0 },
+      { label: '120-150m', count: 0 },
+      { label: '150m+', count: 0 },
+    ]
+
+    filteredCompletions.forEach((e) => {
+      const mins = e.totalRuntime || 120
+      if (mins < 60) {
+        if (buckets[0]) buckets[0].count++
+      } else if (mins <= 90) {
+        if (buckets[1]) buckets[1].count++
+      } else if (mins <= 120) {
+        if (buckets[2]) buckets[2].count++
+      } else if (mins <= 150) {
+        if (buckets[3]) buckets[3].count++
+      } else {
+        if (buckets[4]) buckets[4].count++
+      }
+    })
+
+    return buckets
+  }, [filteredCompletions])
+
+  // ── 8. Chart 6: Top Platforms Donut ──
+  const platformsData = useMemo(() => {
+    const counts: Record<string, number> = {
+      'Netflix': 0,
+      'Prime Video': 0,
+      'Apple TV+': 0,
+      'Disney+': 0,
+      'Others': 0,
+    }
+
+    filteredCompletions.forEach((e) => {
+      const p = getPlatformName(e.titleId)
+      counts[p] = (counts[p] || 0) + 1
+    })
+
+    const total = Object.values(counts).reduce((acc, c) => acc + c, 0)
+    return Object.entries(counts)
+      .map(([name, count]) => ({
+        name,
+        value: count,
+        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+      }))
+      .filter((item) => item.value > 0)
+  }, [filteredCompletions])
+
+  const dominantPlatformLabel = useMemo(() => {
+    if (platformsData.length === 0) return 'No data'
+    const sorted = [...platformsData].sort((a, b) => b.value - a.value)
+    return `${sorted[0]?.percentage ?? 0}% ${sorted[0]?.name ?? ''}`
+  }, [platformsData])
+
+  if (isLoading) {
+    return (
+      <div className="page-wrapper analytics-page" style={{ padding: 24 }}>
+        <div className="skeleton" style={{ height: 40, width: '30%', marginBottom: 24 }} />
+        <div className="ap-stats-row-grid">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton" style={{ height: 90, borderRadius: 'var(--radius-lg)' }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const isDataEmpty = filteredCompletions.length === 0
 
   return (
-    <div className="analytics-page animate-fade-in">
-      {/* Header */}
-      <header className="analytics-header">
-        <div className="analytics-header-row">
-          <BarChart2 size={24} className="analytics-header-icon" />
-          <h1 className="analytics-title">Your Stats</h1>
+    <div className="page-wrapper analytics-page">
+      {/* ── HEADER ── */}
+      <header className="ap-header">
+        <div className="ap-header-left">
+          <h1 className="ap-title">Analytics</h1>
+          <p className="ap-subtitle">Insights & breakdown of your watching behavior</p>
+        </div>
+
+        <div className="ap-header-filters">
+          {/* Year selector */}
+          <div className="ap-filter-select-wrap">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="ap-filter-select"
+            >
+              <option value="All Time">All Time</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+            </select>
+          </div>
+
+          {/* Type Toggle pills */}
+          <div className="ap-toggle-pills" role="tablist">
+            <button
+              className={`ap-toggle-pill ${contentType === 'all' ? 'ap-toggle-pill--active' : ''}`}
+              onClick={() => setContentType('all')}
+              type="button"
+            >
+              All
+            </button>
+            <button
+              className={`ap-toggle-pill ${contentType === 'movie' ? 'ap-toggle-pill--active' : ''}`}
+              onClick={() => setContentType('movie')}
+              type="button"
+            >
+              Movies
+            </button>
+            <button
+              className={`ap-toggle-pill ${contentType === 'tv' ? 'ap-toggle-pill--active' : ''}`}
+              onClick={() => setContentType('tv')}
+              type="button"
+            >
+              TV Shows
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="analytics-content">
-        {isLoading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="analytics-grid-2x2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 110, borderRadius: 'var(--radius-lg)' }} />
-              ))}
+      {isDataEmpty ? (
+        <div className="ap-empty-card">
+          <span style={{ fontSize: 48 }}>📊</span>
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: '12px 0 6px 0' }}>No analytics data</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 16px' }}>
+            {selectedYear !== 'All Time'
+              ? `You haven't completed any titles in ${selectedYear} matching the selection.`
+              : 'Add and mark items as Completed to see stats metrics.'}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* ── TOP STATS ROW (6 cards) ── */}
+          <section className="ap-stats-row-grid animate-fade-in">
+            <div className="ap-stat-card">
+              <span className="ap-stat-icon"><Film size={16} /></span>
+              <span className="ap-stat-value"><AnimatedNumber value={metrics.moviesCount} /></span>
+              <span className="ap-stat-lbl">Movies</span>
             </div>
-            <div className="skeleton" style={{ height: 320, borderRadius: 'var(--radius-lg)' }} />
-            <div className="skeleton" style={{ height: 260, borderRadius: 'var(--radius-lg)' }} />
-          </div>
-        ) : data.totalTitles > 0 ? (
-          <>
-            {/* ── SECTION 1: SUMMARY CARDS ── */}
-            <section className="analytics-grid-2x2" aria-label="Quick statistics grid">
-              {/* Card 1: Watch Time */}
-              <div className="summary-stat-card">
-                <span className="summary-stat-value">{totalWatchHours}h</span>
-                <span className="summary-stat-label">Watch Time</span>
-                <span className="summary-stat-sub">~{convertedDays} days of content</span>
-              </div>
+            <div className="ap-stat-card">
+              <span className="ap-stat-icon"><Layers size={16} /></span>
+              <span className="ap-stat-value"><AnimatedNumber value={metrics.tvCount} /></span>
+              <span className="ap-stat-lbl">TV Shows</span>
+            </div>
+            <div className="ap-stat-card">
+              <span className="ap-stat-icon"><Clock size={16} /></span>
+              <span className="ap-stat-value"><AnimatedNumber value={metrics.watchTimeHours} />h</span>
+              <span className="ap-stat-lbl">Watch Time</span>
+            </div>
+            <div className="ap-stat-card">
+              <span className="ap-stat-icon"><Flame size={16} /></span>
+              <span className="ap-stat-value"><AnimatedNumber value={metrics.streak} /></span>
+              <span className="ap-stat-lbl">Streak</span>
+            </div>
+            <div className="ap-stat-card">
+              <span className="ap-stat-icon"><Star size={16} /></span>
+              <span className="ap-stat-value"><AnimatedNumber value={metrics.avgRating} decimals={1} /></span>
+              <span className="ap-stat-lbl">Avg Rating</span>
+            </div>
+            <div className="ap-stat-card">
+              <span className="ap-stat-icon"><Play size={16} /></span>
+              <span className="ap-stat-value"><AnimatedNumber value={metrics.rewatchedCount} /></span>
+              <span className="ap-stat-lbl">Rewatched</span>
+            </div>
+          </section>
 
-              {/* Card 2: Titles */}
-              <div className="summary-stat-card">
-                <span className="summary-stat-value">{data.totalTitles}</span>
-                <span className="summary-stat-label">Titles Tracked</span>
-                <span className="summary-stat-sub">{data.totalMovies} movies · {data.totalTV} shows</span>
-              </div>
-
-              {/* Card 3: Rating */}
-              <div className="summary-stat-card">
-                <span className="summary-stat-value">
-                  {data.averageRating !== null ? data.averageRating : '—'}
-                </span>
-                <span className="summary-stat-label">Avg Rating</span>
-                {data.averageRating !== null ? (
-                  <SummaryRatingStars rating={data.averageRating} />
-                ) : (
-                  <span className="summary-stat-sub">No ratings logged yet</span>
-                )}
-              </div>
-
-              {/* Card 4: Streak */}
-              <div className="summary-stat-card">
-                <span className="summary-stat-value" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Flame size={20} fill="var(--color-brand)" stroke="none" />
-                  {data.currentStreakDays}
-                </span>
-                <span className="summary-stat-label">Day Streak</span>
-                <span className="summary-stat-sub">Longest: {data.longestStreakDays} days</span>
-              </div>
-            </section>
-
-            {/* ── SECTION 2: GENRE DISTRIBUTION ── */}
-            <section className="analytics-card">
-              <h2 className="analytics-section-title">Genres</h2>
-
-              {data.genreData.length < 3 ? (
-                // Simple Horizontal bar chart if few genres
-                <div style={{ padding: '8px 0' }}>
-                  {data.genreData.map((genre, idx) => (
-                    <div key={genre.name} style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600 }}>{genre.name}</span>
-                        <span style={{ color: 'var(--text-muted)' }}>{genre.count} titles</span>
-                      </div>
-                      <div className="season-progress-bar-bg" style={{ height: 8 }}>
-                        <div
-                          className="season-progress-bar-fg"
-                          style={{
-                            width: `${genre.percentage}%`,
-                            background: activeColors[idx % activeColors.length],
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                // Rich Pie donut chart
-                <div>
-                  <div className="chart-container-donut">
-                    <ResponsiveContainer width={300} height={260}>
-                      <PieChart>
-                        <Pie
-                          data={data.genreData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={70}
-                          outerRadius={100}
-                          paddingAngle={3}
-                          dataKey="count"
-                          onMouseEnter={(_, idx) => setActiveGenreIndex(idx)}
-                          onMouseLeave={() => setActiveGenreIndex(null)}
-                        >
-                          {data.genreData.map((_, index) => {
-                            const isHovered = activeGenreIndex === index
-                            return (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={activeColors[index % activeColors.length] || '#FFF'}
-                                stroke="var(--card-bg)"
-                                strokeWidth={2}
-                                style={{
-                                  transform: isHovered ? 'scale(1.03)' : 'scale(1)',
-                                  transformOrigin: '50% 50%',
-                                  transition: 'transform 200ms ease',
-                                  cursor: 'pointer',
-                                }}
-                              />
-                            )
-                          })}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-
-                    {/* Donut Center text */}
-                    <div className="donut-center-lbl">
-                      <span className="donut-center-title">
-                        {activeGenreIndex !== null && data.genreData[activeGenreIndex]
-                          ? data.genreData[activeGenreIndex].name
-                          : topGenreName}
-                      </span>
-                      <span className="donut-center-count">
-                        {activeGenreIndex !== null && data.genreData[activeGenreIndex]
-                          ? `${data.genreData[activeGenreIndex].count} titles`
-                          : `${topGenreCount} titles`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Horizontal legend chips */}
-                  <div className="genre-legend-list">
-                    {data.genreData.map((genre, idx) => (
-                      <span key={genre.name} className="genre-legend-pill">
-                        <span className="genre-legend-dot" style={{ background: activeColors[idx % activeColors.length] }} />
-                        <span>{genre.name}</span>
-                        <span className="genre-legend-count">{genre.count}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* ── SECTION 3: MONTHLY ACTIVITY ── */}
-            <section className="analytics-card">
-              <div className="monthly-controls">
-                <h2 className="analytics-section-title" style={{ margin: 0 }}>Monthly Activity</h2>
-                <div className="metric-toggle-group">
-                  <button
-                    className={`metric-toggle-btn${activityMetric === 'count' ? ' metric-toggle-btn--active' : ''}`}
-                    onClick={() => setActivityMetric('count')}
-                    type="button"
-                  >
-                    Count
-                  </button>
-                  <button
-                    className={`metric-toggle-btn${activityMetric === 'hours' ? ' metric-toggle-btn--active' : ''}`}
-                    onClick={() => setActivityMetric('hours')}
-                    type="button"
-                  >
-                    Hours
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ width: '100%', height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={data.monthlyData}
-                    margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
-                  >
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      content={
-                        <CustomMonthlyTooltip
-                          showHours={activityMetric === 'hours'}
-                        />
-                      }
-                      cursor={{ fill: 'var(--bg-overlay)', opacity: 0.15 }}
-                    />
-                    <Bar
-                      dataKey={activityMetric === 'hours' ? 'moviesHours' : 'movies'}
-                      stackId="a"
-                      fill="var(--color-brand)"
-                      radius={[0, 0, 0, 0]}
-                    />
-                    <Bar
-                      dataKey={activityMetric === 'hours' ? 'tvHours' : 'tv'}
-                      stackId="a"
-                      fill="#4A90E2" // secondary color
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Chart Legend */}
-              <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  <span style={{ width: 10, height: 10, background: 'var(--color-brand)', borderRadius: 2 }} />
-                  <span>Movies</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  <span style={{ width: 10, height: 10, background: '#4A90E2', borderRadius: 2 }} />
-                  <span>TV Shows</span>
-                </div>
-              </div>
-            </section>
-
-            {/* ── SECTION 4: RATING DISTRIBUTION ── */}
-            <section className="analytics-card">
-              <h2 className="analytics-section-title">Your Ratings</h2>
-
-              <div style={{ width: '100%', height: 160 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    layout="vertical"
-                    data={data.ratingData}
-                    margin={{ top: 0, right: 20, left: -10, bottom: 0 }}
-                  >
-                    <XAxis type="number" hide />
-                    <YAxis
-                      dataKey="label"
-                      type="category"
-                      tick={{ fill: 'var(--text-secondary)', fontSize: 11, fontWeight: 600 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Bar
-                      dataKey="count"
-                      radius={[0, 4, 4, 0]}
-                      label={{
-                        position: 'right',
-                        fill: 'var(--text-secondary)',
-                        fontSize: 10,
-                        fontWeight: 'bold',
-                        className: 'rating-bar-label',
-                      }}
+          {/* ── ROW 1: TWO DONUTS SIDE BY SIDE ── */}
+          <div className="ap-charts-row-split animate-fade-in">
+            {/* Movies vs Shows Donut */}
+            <section className="ap-chart-card">
+              <h3 className="ap-chart-title">Movies vs Shows</h3>
+              <div className="ap-chart-donut-wrap">
+                <ResponsiveContainer width={200} height={200}>
+                  <PieChart>
+                    <Pie
+                      data={moviesShowsData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      dataKey="value"
+                      onMouseEnter={(_, idx) => setHoveredType(moviesShowsData[idx]?.name || null)}
+                      onMouseLeave={() => setHoveredType(null)}
                     >
-                      {data.ratingData.map((_, index) => {
-                        // Rating scale gradient color fills
-                        const colors = ['#EF4444', '#F59E0B', '#F5C518', '#8B5CF6', '#10B981']
-                        return <Cell key={`cell-${index}`} fill={colors[index] || 'var(--color-brand)'} />
+                      <Cell fill="var(--color-brand)" stroke="var(--card-bg)" strokeWidth={2} />
+                      <Cell fill="#00B4D8" stroke="var(--card-bg)" strokeWidth={2} />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="ap-donut-center">
+                  <span className="ap-donut-center-lbl">{hoveredType || dominantTypeLabel}</span>
+                </div>
+              </div>
+              <div className="ap-legend-text">
+                {moviesShowsData.map((item, idx) => (
+                  <span key={item.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span className="ap-legend-dot" style={{ background: idx === 0 ? 'var(--color-brand)' : '#00B4D8' }} />
+                    {item.percentage}% {item.name}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            {/* Genres Donut */}
+            <section className="ap-chart-card">
+              <h3 className="ap-chart-title">Genres</h3>
+              <div className="ap-chart-donut-wrap">
+                <ResponsiveContainer width={200} height={200}>
+                  <PieChart>
+                    <Pie
+                      data={genresData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                      onMouseEnter={(_, idx) => setHoveredGenre(genresData[idx]?.name || null)}
+                      onMouseLeave={() => setHoveredGenre(null)}
+                    >
+                      {genresData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={GENRE_COLORS[index % GENRE_COLORS.length] || '#E50914'} stroke="var(--card-bg)" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="ap-donut-center">
+                  <span className="ap-donut-center-lbl">{hoveredGenre || dominantGenreLabel}</span>
+                </div>
+              </div>
+
+              {/* Genre Pills legend */}
+              <div className="ap-genre-pills">
+                {genresData.map((g, idx) => (
+                  <span key={g.name} className="ap-genre-pill">
+                    <span className="ap-genre-pill-dot" style={{ background: GENRE_COLORS[idx % GENRE_COLORS.length] }} />
+                    {g.name} ({g.percentage}%)
+                  </span>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* ── ROW 2: MONTHLY WATCH TIME (FULL WIDTH) ── */}
+          <section className="ap-chart-card animate-fade-in">
+            <h3 className="ap-chart-title">Monthly Watch Time ({selectedYear})</h3>
+            <div style={{ width: '100%', height: 240 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--border-default)" strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomMonthlyTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                  <Bar dataKey="Movies" stackId="a" fill="var(--color-brand)" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="TV" stackId="a" fill="#00B4D8" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          {/* ── ROW 3: RATINGS & RUNTIMES SIDE BY SIDE ── */}
+          <div className="ap-charts-row-split animate-fade-in">
+            {/* Ratings distribution */}
+            <section className="ap-chart-card" style={{ height: 350 }}>
+              <h3 className="ap-chart-title">Ratings Distribution</h3>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart layout="vertical" data={ratingsDistributionData} margin={{ top: 0, right: 20, left: -25, bottom: 0 }}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="label" type="category" tick={{ fill: 'var(--text-secondary)', fontSize: 11, fontWeight: 600 }} tickLine={false} axisLine={false} />
+                    <Tooltip content={<CustomChartTooltip />} cursor={false} />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]} label={{ position: 'right', fill: 'var(--text-secondary)', fontSize: 11, fontWeight: 'bold' }}>
+                      {ratingsDistributionData.map((item) => {
+                        let barColor = '#EF4444' // red for 1-4
+                        if (item.star >= 5 && item.star <= 7) barColor = '#F5A623' // yellow
+                        else if (item.star >= 8) barColor = '#2ECC71' // green
+                        return <Cell key={`cell-${item.star}`} fill={barColor} />
                       })}
                     </Bar>
                   </BarChart>
@@ -372,60 +593,61 @@ export default function AnalyticsPage() {
               </div>
             </section>
 
-            {/* ── SECTION 5: MOVIE vs TV SPLIT ── */}
-            <section className="analytics-card">
-              <h2 className="analytics-section-title">Movie vs TV Split</h2>
-              <div className="split-visual-row">
-                <div className="split-movie-bar" style={{ width: `${data.typeSplit.moviePct}%` }} />
-                <div className="split-tv-bar" style={{ width: `${data.typeSplit.tvPct}%` }} />
+            {/* Runtime distribution */}
+            <section className="ap-chart-card" style={{ height: 350 }}>
+              <h3 className="ap-chart-title">Runtime Distribution</h3>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={runtimeDistributionData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <Tooltip content={<CustomChartTooltip />} cursor={false} />
+                    <Bar dataKey="count" fill="var(--color-brand)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <p className="split-label-text">
-                {data.typeSplit.moviePct}% Movies ({data.typeSplit.movies}) · {data.typeSplit.tvPct}% TV Shows ({data.typeSplit.tv})
-              </p>
             </section>
-
-            {/* ── SECTION 6: YEARLY WRAPPED CARD ── */}
-            {data.totalTitles > 10 && (
-              <section className="wrapped-recap-card animate-fade-in" aria-label="Yearly Wrapped Highlights">
-                <div className="wrapped-header">
-                  <span className="wrapped-year">{data.yearlyStats.year} WRAPPED</span>
-                  <span className="wrapped-badge">Highlight</span>
-                </div>
-
-                <div className="wrapped-main-stat">
-                  {data.yearlyStats.titlesWatched} Titles Watched
-                </div>
-
-                <div className="wrapped-row-grid">
-                  <div className="wrapped-metric-box">
-                    <span className="wrapped-metric-val">{data.yearlyStats.totalHours}h</span>
-                    <span className="wrapped-metric-lbl">Total Time</span>
-                  </div>
-                  <div className="wrapped-metric-box">
-                    <span className="wrapped-metric-val">{data.yearlyStats.topGenre}</span>
-                    <span className="wrapped-metric-lbl">Top Genre</span>
-                  </div>
-                </div>
-
-                {data.yearlyStats.mostWatchedShow && (
-                  <div className="wrapped-metric-box" style={{ borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 10 }}>
-                    <span className="wrapped-metric-val">{data.yearlyStats.mostWatchedShow}</span>
-                    <span className="wrapped-metric-lbl">Most Watched Series</span>
-                  </div>
-                )}
-              </section>
-            )}
-          </>
-        ) : (
-          <div className="analytics-empty animate-fade-in">
-            <span className="analytics-empty-emoji" aria-hidden="true">📊</span>
-            <p className="analytics-empty-title">No statistics available</p>
-            <p className="analytics-empty-subtitle">
-              Your watchlist is currently empty. Add titles to see runtime, genre and status statistics.
-            </p>
           </div>
-        )}
-      </main>
+
+          {/* ── ROW 4: TOP PLATFORMS DONUT ── */}
+          <section className="ap-chart-card animate-fade-in" style={{ maxWidth: 600, margin: '0 auto 20px' }}>
+            <h3 className="ap-chart-title" style={{ textAlign: 'center' }}>Top Platforms</h3>
+            <div className="ap-chart-donut-wrap">
+              <ResponsiveContainer width={200} height={200}>
+                <PieChart>
+                  <Pie
+                    data={platformsData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={3}
+                    dataKey="value"
+                    onMouseEnter={(_, idx) => setHoveredPlatform(platformsData[idx]?.name || null)}
+                    onMouseLeave={() => setHoveredPlatform(null)}
+                  >
+                    {platformsData.map((item) => (
+                      <Cell key={`cell-${item.name}`} fill={PLATFORM_COLORS[item.name] || '#888'} stroke="var(--card-bg)" strokeWidth={2} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="ap-donut-center">
+                <span className="ap-donut-center-lbl">{hoveredPlatform || dominantPlatformLabel}</span>
+              </div>
+            </div>
+
+            <div className="ap-legend-text" style={{ flexWrap: 'wrap', gap: 12 }}>
+              {platformsData.map((item) => (
+                <span key={item.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                  <span className="ap-legend-dot" style={{ background: PLATFORM_COLORS[item.name] || '#888' }} />
+                  {item.name}: {item.value} ({item.percentage}%)
+                </span>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   )
 }

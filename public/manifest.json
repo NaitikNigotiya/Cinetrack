@@ -1,7 +1,7 @@
 {
   "name": "CineTrack",
   "short_name": "CineTrack",
-  "description": "Track every movie and show you watch. Build your watchlist, rate titles, and discover what to watch next.",
+  "description": "Track. Rate. Remember.",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#E50914",

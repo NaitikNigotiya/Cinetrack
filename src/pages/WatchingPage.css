@@ -1,0 +1,255 @@
+/* ─── Watching Page Stylesheet ─────────────────────────────────────────────── */
+
+.watching-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* Header section */
+.wt-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.wt-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.wt-tabs-row {
+  display: flex;
+  gap: 10px;
+}
+
+.wt-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.wt-tab-btn--active {
+  background: var(--color-brand);
+  color: #fff;
+  border-color: var(--color-brand);
+}
+
+.wt-tab-badge {
+  font-size: 10px;
+  opacity: 0.8;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+}
+
+.wt-tab-btn--active .wt-tab-badge {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Cards List Container */
+.wt-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wt-card {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  box-shadow: var(--card-shadow);
+  gap: 16px;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.wt-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.wt-card-poster-wrap {
+  width: 60px;
+  height: 90px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.wt-card-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wt-card-no-poster {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* Middle details */
+.wt-card-middle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wt-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wt-card-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 2px 0 6px 0;
+}
+
+.wt-progress-bar-bg {
+  width: 100%;
+  height: 4px;
+  background: var(--border-default);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.wt-progress-bar-fill {
+  height: 100%;
+  background: var(--color-brand);
+  border-radius: var(--radius-pill);
+}
+
+.wt-card-progress-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Right button area */
+.wt-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wt-continue-btn {
+  background: var(--color-brand);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity var(--transition-fast);
+}
+
+.wt-continue-btn:hover {
+  opacity: 0.9;
+}
+
+.wt-next-episode-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Empty State */
+.wt-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+}
+
+.wt-empty-emoji {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.wt-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+}
+
+.wt-empty-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 20px 0;
+}
+
+.wt-empty-cta {
+  background: var(--color-brand);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .wt-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .wt-card-poster-wrap {
+    width: 48px;
+    height: 72px;
+  }
+  
+  .wt-card-right {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-default);
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+}

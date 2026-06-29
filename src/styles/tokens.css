@@ -44,7 +44,7 @@
   /* Components */
   --card-bg: #FFFFFF;
   --card-border: #E0DFD8;
-  --card-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   --input-bg: #FFFFFF;
   --input-border: #BDBCB4;
   --input-focus: #F5C518;
@@ -91,6 +91,8 @@
   /* Bottom nav safe area */
   --bottom-nav-height: 64px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  --sidebar-width: 240px;
 }
 
 /* ─── DARK THEME (Netflix-inspired) ─── */
@@ -131,7 +133,7 @@
 
   --card-bg: #1F1F1F;
   --card-border: #2A2A2A;
-  --card-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   --input-bg: #2A2A2A;
   --input-border: #3A3A3A;
   --input-focus: #E50914;
@@ -143,8 +145,17 @@
 }
 
 /* ─── GLOBAL RESETS ─── */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   font-family: var(--font-family);
   background: var(--bg-primary);
@@ -153,16 +164,112 @@ body {
   overflow-x: hidden;
   transition: background var(--transition-slow), color var(--transition-slow);
 }
-img { display: block; max-width: 100%; }
-button { cursor: pointer; border: none; background: none; font-family: inherit; }
-a { color: inherit; text-decoration: none; }
-input, textarea { font-family: inherit; }
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
 
 /* ─── UTILITY CLASSES ─── */
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-.visually-hidden { visibility: hidden; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.visually-hidden {
+  visibility: hidden;
+}
 
 /* ─── SCROLLBAR ─── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.desktop-only {
+  display: none;
+}
+
+.mobile-only {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block;
+  }
+
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* ─── OVERFLOW GUARDS ─── */
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* Utility class for page-level containers - enables scroll for all pages except dashboard */
+.page-wrapper,
+.sp-page,
+.dp-page,
+.watchlist-page,
+.analytics-page,
+.settings-page,
+.favorites-page,
+.history-page,
+.episodes-page,
+.detail-page {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 24px;
+}
+
+.dashboard-right {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-right {
+    display: block;
+    width: 320px;
+    flex-shrink: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-left: 1px solid var(--border-default);
+    background: var(--bg-secondary);
+  }
+}

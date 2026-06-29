@@ -161,3 +161,36 @@ export function getNewReleases(
     sort_by: 'popularity.desc',
   })
 }
+
+/**
+ * Top-rated movies from TMDb.
+ */
+export function getTopRated(page = 1): Promise<TMDbSearchResponse> {
+  return tmdbFetch<TMDbSearchResponse>('/movie/top_rated', { page })
+}
+
+/**
+ * Discover movies filtered by genre id, sorted by vote_average desc.
+ */
+export function discoverByGenre(
+  genreId: number,
+  sortBy = 'popularity.desc',
+  page = 1,
+): Promise<TMDbSearchResponse> {
+  return tmdbFetch<TMDbSearchResponse>('/discover/movie', {
+    with_genres: genreId,
+    sort_by: sortBy,
+    'vote_count.gte': 100,
+    page,
+  })
+}
+
+/**
+ * Get title backdrop/poster images from TMDb.
+ */
+export function getTitleImages(
+  type: 'movie' | 'tv',
+  id: number,
+): Promise<{ backdrops: { file_path: string }[] }> {
+  return tmdbFetch<{ backdrops: { file_path: string }[] }>(`/${type}/${id}/images`)
+}

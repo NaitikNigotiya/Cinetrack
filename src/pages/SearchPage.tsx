@@ -1,6 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, X, Clock, Film, Star } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import {
+  Search,
+  X,
+  Clock,
+  TrendingUp,
+  Film,
+  ChevronDown,
+} from 'lucide-react'
 
 import { useAuth } from '@/features/auth/useAuth'
 import { useSearch } from '@/features/search/hooks/useSearch'
@@ -8,7 +16,6 @@ import { useRecentSearches } from '@/features/search/hooks/useRecentSearches'
 import { useWatchlistStore } from '@/features/watchlist/watchlistStore'
 import { addToWatchlist } from '@/features/watchlist/addToWatchlist'
 import { getTrending, getImageUrl } from '@/lib/tmdb'
-
 import { BottomSheet } from '@/components/ui/BottomSheet'
 
 import type { TMDbSearchResult } from '@/types/tmdb'
@@ -18,101 +25,99 @@ import './SearchPage.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-type Filter = 'all' | 'movie' | 'tv'
+type FilterType = 'all' | 'movie' | 'tv'
 
-const FILTER_OPTIONS: { label: string; value: Filter }[] = [
-  { label: 'All',      value: 'all' },
-  { label: 'Movies',   value: 'movie' },
-  { label: 'TV Shows', value: 'tv' },
+const FILTER_OPTIONS: { label: string; value: FilterType }[] = [
+  { label: 'All',      value: 'all'   },
+  { label: 'Movies',  value: 'movie' },
+  { label: 'TV Shows', value: 'tv'   },
 ]
 
 const STATUS_OPTIONS: { emoji: string; label: string; value: WatchStatus }[] = [
-  { emoji: '👁',  label: 'Watching',      value: 'watching' },
-  { emoji: '✓',  label: 'Completed',     value: 'completed' },
+  { emoji: '👁',  label: 'Watching',      value: 'watching'      },
+  { emoji: '✓',  label: 'Completed',     value: 'completed'     },
   { emoji: '🕐', label: 'Plan to Watch', value: 'plan_to_watch' },
-  { emoji: '✗',  label: 'Dropped',       value: 'dropped' },
+  { emoji: '✗',  label: 'Dropped',       value: 'dropped'       },
 ]
+
+const POPULAR_SEARCHES = [
+  'Oppenheimer',
+  'True Detective',
+  'Spirited Away',
+  'The Dark Knight',
+  'Parasite',
+]
+
+const BROWSE_CATEGORIES = [
+  { id: 'movie',    icon: '🎬', label: 'Movies'    },
+  { id: 'tv',       icon: '📺', label: 'TV Shows'  },
+  { id: 'actor',    icon: '🎭', label: 'Actors'    },
+  { id: 'director', icon: '🎥', label: 'Directors' },
+]
+
+const GENRE_OPTIONS = [
+  'All', 'Action', 'Comedy', 'Drama', 'Horror',
+  'Sci-Fi', 'Thriller', 'Romance', 'Animation', 'Documentary',
+]
+const YEAR_OPTIONS   = ['All', '2024', '2023', '2022', '2021', '2020', '2010s', '2000s', '1990s']
+const RATING_OPTIONS = ['All', '9+', '8+', '7+', '6+']
+const SORT_OPTIONS   = ['Popular', 'Latest', 'Rating', 'Title A-Z']
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeTitleId(result: TMDbSearchResult): string {
-  return `${result.media_type === 'movie' ? 'movie' : 'tv'}:${result.id}`
+function makeTitleId(r: TMDbSearchResult) {
+  return `${r.media_type === 'movie' ? 'movie' : 'tv'}:${r.id}`
 }
 
-function getYear(result: TMDbSearchResult): string {
-  return (
-    result.release_date?.slice(0, 4) ??
-    result.first_air_date?.slice(0, 4) ??
-    '—'
-  )
+function getYear(r: TMDbSearchResult) {
+  return r.release_date?.slice(0, 4) ?? r.first_air_date?.slice(0, 4) ?? '—'
 }
 
-function getTitle(result: TMDbSearchResult): string {
-  return result.title ?? result.name ?? 'Untitled'
+function getTitle(r: TMDbSearchResult) {
+  return r.title ?? r.name ?? 'Untitled'
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Result Card ─────────────────────────────────────────────────────────────
 
-/** Individual result card — subscribes to its own watchlist slice */
-function ResultCard({
-  result,
-  onAdd,
-}: {
-  result: TMDbSearchResult
-  onAdd: (result: TMDbSearchResult) => void
-}) {
+function ResultCard({ result, onAdd }: { result: TMDbSearchResult; onAdd: (r: TMDbSearchResult) => void }) {
+  const navigate = useNavigate()
   const titleId = makeTitleId(result)
-  const inList = useWatchlistStore((s) => s.titleIds.includes(titleId))
-
+  const inList  = useWatchlistStore((s) => s.titleIds.includes(titleId))
   const title   = getTitle(result)
   const year    = getYear(result)
   const rating  = result.vote_average > 0 ? result.vote_average.toFixed(1) : null
   const poster  = getImageUrl(result.poster_path, 'w500')
-  const badge   = result.media_type === 'movie' ? 'MOVIE' : 'TV'
+  const isMovie = result.media_type === 'movie'
 
   return (
-    <article className="result-card">
-      <div className="result-card-poster-wrapper">
-        {poster ? (
-          <img
-            src={poster}
-            alt={title}
-            className="result-card-poster"
-            loading="lazy"
-          />
-        ) : (
-          <div className="result-card-no-poster">
-            <Film size={32} color="var(--text-muted)" aria-hidden="true" />
-          </div>
-        )}
-        <span className="result-card-badge" aria-label={badge}>{badge}</span>
-      </div>
+    <article className="sp-card" onClick={() => navigate(`/title/${result.media_type}:${result.id}`)} style={{ cursor: 'pointer' }}>
+      <div className="sp-card-poster-wrap">
+        {poster
+          ? <img src={poster} alt={title} className="sp-card-poster" loading="lazy" />
+          : <div className="sp-card-no-poster"><Film size={32} color="var(--text-muted)" /></div>}
 
-      <div className="result-card-info">
-        <p className="result-card-title">{title}</p>
-        <p className="result-card-meta">
-          <span>{year}</span>
-          {rating && (
-            <>
-              <span aria-hidden="true">·</span>
-              <Star size={10} aria-hidden="true" />
-              <span>{rating}</span>
-            </>
-          )}
-        </p>
+        {/* Bottom gradient + title overlay */}
+        <div className="sp-card-gradient" />
+        <div className="sp-card-overlay-text">
+          <p className="sp-card-overlay-title">{title}</p>
+          <p className="sp-card-overlay-year">{year}</p>
+        </div>
+
+        {/* Type badge top-left */}
+        <span className={`sp-card-type-badge ${isMovie ? 'sp-card-type-badge--movie' : 'sp-card-type-badge--tv'}`}>
+          {isMovie ? 'MOVIE' : 'TV'}
+        </span>
+
+        {/* Rating badge top-right */}
+        {rating && (
+          <span className="sp-card-rating-badge">⭐ {rating}</span>
+        )}
       </div>
 
       {inList ? (
-        <div className="result-card-in-list-btn" aria-label="Already in watchlist">
-          ✓ In List
-        </div>
+        <div className="sp-card-in-list">✓ In Watchlist</div>
       ) : (
-        <button
-          className="result-card-add-btn"
-          onClick={() => onAdd(result)}
-          aria-label={`Add ${title} to watchlist`}
-          type="button"
-        >
+        <button className="sp-card-add-btn" onClick={(e) => { e.stopPropagation(); onAdd(result) }} type="button">
           + Add
         </button>
       )}
@@ -120,30 +125,30 @@ function ResultCard({
   )
 }
 
-/** 2-column skeleton loading grid */
+// ─── Skeleton Grid ────────────────────────────────────────────────────────────
+
 function SkeletonGrid() {
   return (
-    <div className="results-grid" aria-label="Loading results…">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="skeleton-card">
-          <div className="skeleton skeleton-poster" />
-          <div className="skeleton skeleton-line" />
-          <div className="skeleton skeleton-line skeleton-line--short" />
+    <div className="sp-results-grid" aria-label="Loading results…">
+      {Array.from({ length: 10 }).map((_, i) => (
+        <div key={i} className="sp-skeleton-card">
+          <div className="skeleton sp-skeleton-poster" />
+          <div className="skeleton sp-skeleton-line" />
+          <div className="skeleton sp-skeleton-line sp-skeleton-line--short" />
         </div>
       ))}
     </div>
   )
 }
 
-/** No results state */
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
 function EmptyState({ query }: { query: string }) {
   return (
-    <div className="empty-state animate-fade-in">
-      <span className="empty-state-emoji" aria-hidden="true">🎞️</span>
-      <p className="empty-state-title">No results for "{query}"</p>
-      <p className="empty-state-subtitle">
-        Try a different title or check the spelling.
-      </p>
+    <div className="sp-empty animate-fade-in">
+      <span className="sp-empty-icon" aria-hidden="true">🔍</span>
+      <p className="sp-empty-title">No results for "{query}"</p>
+      <p className="sp-empty-desc">Try different keywords or check the spelling</p>
     </div>
   )
 }
@@ -151,19 +156,25 @@ function EmptyState({ query }: { query: string }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SearchPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
 
-  // ── Local state ────────────────────────────────────────────────────────────
+  // State
   const [query,          setQuery]          = useState('')
-  const [filter,         setFilter]         = useState<Filter>('all')
+  const [filter,         setFilter]         = useState<FilterType>('all')
   const [selectedResult, setSelectedResult] = useState<TMDbSearchResult | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<WatchStatus>('plan_to_watch')
   const [isAdding,       setIsAdding]       = useState(false)
   const [toast,          setToast]          = useState<string | null>(null)
+  const [showFilters,    setShowFilters]    = useState(false)
+  const [genre,          setGenre]          = useState('All')
+  const [year,           setYear]           = useState('All')
+  const [rating,         setRating]         = useState('All')
+  const [sortBy,         setSortBy]         = useState('Popular')
 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // ── Hooks ──────────────────────────────────────────────────────────────────
+  // Hooks
   const { results, isLoading, isError, isEmpty } = useSearch(query)
   const { recent, addSearch, clearSearch, clearAll } = useRecentSearches()
 
@@ -173,42 +184,53 @@ export default function SearchPage() {
     staleTime: 30 * 60 * 1000,
   })
 
-  // ── Auto-focus ─────────────────────────────────────────────────────────────
+  // Auto-focus
   useEffect(() => { inputRef.current?.focus() }, [])
 
-  // ── Toast helper ───────────────────────────────────────────────────────────
-  function showToast(msg: string) {
+  // Keyboard shortcut ⌘K / Ctrl+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  const showToast = useCallback((msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
-  }
+  }, [])
 
-  // ── Filter client-side by media type ──────────────────────────────────────
-  const filteredResults =
-    filter === 'all'
-      ? results
-      : results.filter((r) => r.media_type === filter)
+  // Filter
+  const filteredResults = filter === 'all' ? results : results.filter((r) => r.media_type === filter)
 
-  // ── Query submit: add to recent ────────────────────────────────────────────
+  // Query change — adds to recent after 2 chars
   const handleQueryChange = (val: string) => {
     setQuery(val)
     if (val.trim().length >= 2) addSearch(val.trim())
   }
 
-  // ── Open add sheet ─────────────────────────────────────────────────────────
+  const handlePillClick = (term: string) => {
+    setQuery(term)
+    addSearch(term)
+    inputRef.current?.focus()
+  }
+
   const handleOpenAdd = (result: TMDbSearchResult) => {
     setSelectedResult(result)
     setSelectedStatus('plan_to_watch')
   }
 
-  // ── Confirm add to watchlist ───────────────────────────────────────────────
   const handleConfirmAdd = async () => {
     if (!selectedResult || !user) return
     setIsAdding(true)
     try {
       const titleId = makeTitleId(selectedResult)
       const type: MediaType = selectedResult.media_type === 'movie' ? 'movie' : 'tv'
-      const year = parseInt(getYear(selectedResult)) || 0
-
+      const yr = parseInt(getYear(selectedResult)) || 0
       await addToWatchlist({
         userId: user.uid,
         titleId,
@@ -216,11 +238,10 @@ export default function SearchPage() {
         title: getTitle(selectedResult),
         posterPath: selectedResult.poster_path,
         backdropPath: selectedResult.backdrop_path,
-        year,
+        year: yr,
         genres: [],
         status: selectedStatus,
       })
-
       setSelectedResult(null)
       showToast('Added to watchlist ✓')
     } catch {
@@ -230,224 +251,295 @@ export default function SearchPage() {
     }
   }
 
-  // ── Trending films for default state ───────────────────────────────────────
-  const trendingItems = (trendingData?.results ?? [])
-    .filter((r) => r.media_type !== 'person')
-    .slice(0, 20)
+  const handleBrowseCategory = (id: string) => {
+    if (id === 'movie') { setFilter('movie'); inputRef.current?.focus() }
+    else if (id === 'tv') { setFilter('tv'); inputRef.current?.focus() }
+    else { inputRef.current?.focus() }
+  }
 
-  // ── Determine which content area to show ───────────────────────────────────
+  const trendingItems = (trendingData?.results ?? []).filter((r) => r.media_type !== 'person').slice(0, 20)
   const hasQuery = query.trim().length >= 2
 
-  // ─── Render ───────────────────────────────────────────────────────────────
-
+  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="search-page">
+    <div className="sp-page">
+      <div className="sp-inner">
 
-      {/* ── Sticky header ── */}
-      <div className="search-header">
-        {/* Search input */}
-        <div className="search-input-wrapper">
-          <span className="search-icon" aria-hidden="true">
-            <Search size={20} />
-          </span>
-          <input
-            ref={inputRef}
-            id="search-input"
-            className="search-input"
-            type="search"
-            value={query}
-            onChange={(e) => handleQueryChange(e.target.value)}
-            placeholder="Search movies, TV shows…"
-            aria-label="Search movies and TV shows"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-          />
-          {query && (
-            <button
-              className="search-clear-btn"
-              onClick={() => setQuery('')}
-              aria-label="Clear search"
-              type="button"
-            >
-              <X size={12} />
-            </button>
-          )}
+        {/* ── Sticky Search Bar ─────────────────────────────────────────────── */}
+        <div className="sp-sticky-header">
+          <div className="sp-input-wrap">
+            <span className="sp-input-icon" aria-hidden="true">
+              <Search size={20} />
+            </span>
+
+            <input
+              ref={inputRef}
+              id="search-input"
+              className="sp-input"
+              type="search"
+              value={query}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              placeholder="Search movies, shows, people..."
+              aria-label="Search movies, shows, and people"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+
+            {query && (
+              <div className="sp-input-right">
+                <button
+                  className="sp-clear-btn"
+                  onClick={() => setQuery('')}
+                  aria-label="Clear search"
+                  type="button"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            {!query && (
+              <div className="sp-kbd-hint" aria-hidden="true">⌘K</div>
+            )}
+          </div>
         </div>
 
-        {/* Filter pills */}
-        <div className="filter-pills-row" role="group" aria-label="Filter by type">
-          {FILTER_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              className={`filter-pill${filter === opt.value ? ' filter-pill--active' : ''}`}
-              onClick={() => setFilter(opt.value)}
-              aria-pressed={filter === opt.value}
-              type="button"
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Content ── */}
-      <div className="search-content">
-
-        {/* Default state: recent + trending */}
+        {/* ── Default State (no query) ──────────────────────────────────────── */}
         {!hasQuery && (
-          <>
-            {/* Recent searches */}
+          <div className="sp-default-state animate-fade-in">
+
+            {/* Recent Searches */}
             {recent.length > 0 && (
-              <section aria-label="Recent searches">
-                <div className="section-header">
-                  <span className="section-title">
-                    <Clock size={14} aria-hidden="true" />
-                    Recent searches
-                  </span>
-                  <button
-                    className="section-clear-btn"
-                    onClick={clearAll}
-                    type="button"
-                  >
-                    Clear all
-                  </button>
+              <section className="sp-section" aria-label="Recent searches">
+                <div className="sp-section-header">
+                  <h2 className="sp-section-title">Recent Searches</h2>
+                  <button className="sp-section-clear" onClick={clearAll} type="button">Clear all</button>
                 </div>
-                <ul className="recent-list" role="list">
-                  {recent.map((q) => (
-                    <li key={q} className="recent-item">
+                <div className="sp-pills-row">
+                  {recent.slice(0, 6).map((q) => (
+                    <button
+                      key={q}
+                      className="sp-pill sp-pill--recent"
+                      onClick={() => handlePillClick(q)}
+                      type="button"
+                    >
+                      <Clock size={12} aria-hidden="true" />
+                      <span>{q}</span>
                       <span
-                        className="recent-item-text"
+                        className="sp-pill-remove"
                         role="button"
+                        aria-label={`Remove ${q}`}
+                        onClick={(e) => { e.stopPropagation(); clearSearch(q) }}
                         tabIndex={0}
-                        onClick={() => setQuery(q)}
-                        onKeyDown={(e) => e.key === 'Enter' && setQuery(q)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.stopPropagation(), clearSearch(q))}
                       >
-                        {q}
+                        <X size={11} />
                       </span>
-                      <button
-                        className="recent-item-remove"
-                        onClick={() => clearSearch(q)}
-                        aria-label={`Remove "${q}" from recent searches`}
-                        type="button"
-                      >
-                        <X size={14} />
-                      </button>
-                    </li>
+                    </button>
                   ))}
-                </ul>
+                </div>
               </section>
             )}
 
+            {/* Popular Searches */}
+            <section className="sp-section" aria-label="Popular searches">
+              <div className="sp-section-header">
+                <h2 className="sp-section-title">Popular Searches</h2>
+              </div>
+              <div className="sp-pills-row">
+                {POPULAR_SEARCHES.map((term) => (
+                  <button
+                    key={term}
+                    className="sp-pill sp-pill--popular"
+                    onClick={() => handlePillClick(term)}
+                    type="button"
+                  >
+                    <TrendingUp size={12} aria-hidden="true" />
+                    <span>{term}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Browse By */}
+            <section className="sp-section" aria-label="Browse by category">
+              <div className="sp-section-header">
+                <h2 className="sp-section-title">Browse by</h2>
+              </div>
+              <div className="sp-browse-grid">
+                {BROWSE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    className="sp-browse-card"
+                    onClick={() => handleBrowseCategory(cat.id)}
+                    type="button"
+                  >
+                    <span className="sp-browse-icon">{cat.icon}</span>
+                    <span className="sp-browse-label">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Filters */}
+            <section className="sp-section" aria-label="Filters">
+              <div className="sp-section-header">
+                <h2 className="sp-section-title">Filters</h2>
+                <button
+                  className="sp-advanced-toggle"
+                  onClick={() => setShowFilters((v) => !v)}
+                  type="button"
+                >
+                  Advanced <ChevronDown size={12} className={showFilters ? 'sp-chevron-up' : ''} />
+                </button>
+              </div>
+              <div className={`sp-filters-row ${showFilters ? 'sp-filters-row--visible' : ''}`}>
+                <div className="sp-filter-group">
+                  <label className="sp-filter-label" htmlFor="sp-genre">Genre</label>
+                  <select id="sp-genre" className="sp-filter-select" value={genre} onChange={(e) => setGenre(e.target.value)}>
+                    {GENRE_OPTIONS.map((g) => <option key={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div className="sp-filter-group">
+                  <label className="sp-filter-label" htmlFor="sp-year">Year</label>
+                  <select id="sp-year" className="sp-filter-select" value={year} onChange={(e) => setYear(e.target.value)}>
+                    {YEAR_OPTIONS.map((y) => <option key={y}>{y}</option>)}
+                  </select>
+                </div>
+                <div className="sp-filter-group">
+                  <label className="sp-filter-label" htmlFor="sp-rating">Rating</label>
+                  <select id="sp-rating" className="sp-filter-select" value={rating} onChange={(e) => setRating(e.target.value)}>
+                    {RATING_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div className="sp-filter-group">
+                  <label className="sp-filter-label" htmlFor="sp-sort">Sort By</label>
+                  <select id="sp-sort" className="sp-filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                    {SORT_OPTIONS.map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </section>
+
             {/* Trending this week */}
             {trendingItems.length > 0 && (
-              <section aria-label="Trending this week">
-                <div className="section-header">
-                  <span className="section-title">Trending this week</span>
+              <section className="sp-section" aria-label="Trending this week">
+                <div className="sp-section-header">
+                  <h2 className="sp-section-title">Trending This Week</h2>
                 </div>
-                <div className="trending-rail">
+                <div className="sp-trending-rail">
                   {trendingItems.map((item) => {
                     const poster = getImageUrl(item.poster_path, 'w200')
                     return (
                       <div
                         key={item.id}
-                        className="trending-card"
+                        className="sp-trending-card"
                         role="button"
                         tabIndex={0}
-                        onClick={() => handleOpenAdd(item)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleOpenAdd(item)}
+                        onClick={() => navigate(`/title/${item.media_type || 'movie'}:${item.id}`)}
+                        onKeyDown={(e) => e.key === 'Enter' && navigate(`/title/${item.media_type || 'movie'}:${item.id}`)}
                         aria-label={getTitle(item)}
                       >
-                        {poster ? (
-                          <img
-                            src={poster}
-                            alt={getTitle(item)}
-                            className="trending-poster"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="trending-no-poster">
-                            <Film size={20} color="var(--text-muted)" aria-hidden="true" />
-                          </div>
-                        )}
-                        <p className="trending-title">{getTitle(item)}</p>
+                        {poster
+                          ? <img src={poster} alt={getTitle(item)} className="sp-trending-poster" loading="lazy" />
+                          : <div className="sp-trending-no-poster"><Film size={20} color="var(--text-muted)" /></div>}
+                        <p className="sp-trending-title">{getTitle(item)}</p>
                       </div>
                     )
                   })}
                 </div>
               </section>
             )}
-          </>
-        )}
-
-        {/* Loading skeletons */}
-        {hasQuery && isLoading && <SkeletonGrid />}
-
-        {/* Error state */}
-        {hasQuery && isError && (
-          <div className="empty-state animate-fade-in">
-            <span className="empty-state-emoji">⚠️</span>
-            <p className="empty-state-title">Something went wrong</p>
-            <p className="empty-state-subtitle">Check your connection and try again.</p>
           </div>
         )}
 
-        {/* Results grid */}
-        {hasQuery && !isLoading && !isError && filteredResults.length > 0 && (
-          <div
-            className="results-grid animate-fade-in"
-            role="list"
-            aria-label={`${filteredResults.length} results`}
-          >
-            {filteredResults.map((result) => (
-              <div key={result.id} role="listitem">
-                <ResultCard result={result} onAdd={handleOpenAdd} />
+        {/* ── Results State ─────────────────────────────────────────────────── */}
+        {hasQuery && (
+          <div className="sp-results-state">
+
+            {/* Filter pills row */}
+            <div className="sp-filter-pills" role="group" aria-label="Filter results by type">
+              {FILTER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`sp-filter-pill ${filter === opt.value ? 'sp-filter-pill--active' : ''}`}
+                  onClick={() => setFilter(opt.value)}
+                  aria-pressed={filter === opt.value}
+                  type="button"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Loading */}
+            {isLoading && <SkeletonGrid />}
+
+            {/* Error */}
+            {isError && !isLoading && (
+              <div className="sp-empty animate-fade-in">
+                <span className="sp-empty-icon">⚠️</span>
+                <p className="sp-empty-title">Something went wrong</p>
+                <p className="sp-empty-desc">Check your connection and try again.</p>
               </div>
-            ))}
+            )}
+
+            {/* Results grid */}
+            {!isLoading && !isError && filteredResults.length > 0 && (
+              <div
+                className="sp-results-grid animate-fade-in"
+                role="list"
+                aria-label={`${filteredResults.length} results`}
+              >
+                {filteredResults.map((result) => (
+                  <div key={result.id} role="listitem">
+                    <ResultCard result={result} onAdd={handleOpenAdd} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* No results */}
+            {isEmpty && <EmptyState query={query} />}
           </div>
         )}
-
-        {/* No results */}
-        {hasQuery && isEmpty && <EmptyState query={query} />}
       </div>
 
-      {/* ── Add to watchlist bottom sheet ── */}
+      {/* ── Add to Watchlist Bottom Sheet ─────────────────────────────────── */}
       <BottomSheet
         isOpen={selectedResult !== null}
         onClose={() => setSelectedResult(null)}
         label="Add to watchlist"
       >
         {selectedResult && (
-          <div className="add-sheet">
-            {/* Title header */}
-            <div className="add-sheet-header">
+          <div className="sp-add-sheet">
+            <div className="sp-add-header">
               {getImageUrl(selectedResult.poster_path, 'w200') ? (
                 <img
                   src={getImageUrl(selectedResult.poster_path, 'w200')!}
                   alt={getTitle(selectedResult)}
-                  className="add-sheet-thumb"
+                  className="sp-add-thumb"
                 />
               ) : (
-                <div className="add-sheet-thumb-placeholder">
-                  <Film size={20} color="var(--text-muted)" aria-hidden="true" />
+                <div className="sp-add-thumb-placeholder">
+                  <Film size={20} color="var(--text-muted)" />
                 </div>
               )}
-              <div className="add-sheet-meta">
-                <p className="add-sheet-title">{getTitle(selectedResult)}</p>
-                <p className="add-sheet-year">{getYear(selectedResult)}</p>
+              <div className="sp-add-meta">
+                <p className="sp-add-title">{getTitle(selectedResult)}</p>
+                <p className="sp-add-year">{getYear(selectedResult)}</p>
+                <span className={`sp-add-type-badge ${selectedResult.media_type === 'movie' ? 'sp-add-type-badge--movie' : 'sp-add-type-badge--tv'}`}>
+                  {selectedResult.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                </span>
               </div>
             </div>
 
-            {/* Status selector */}
-            <div
-              className="status-selector"
-              role="radiogroup"
-              aria-label="Watch status"
-            >
+            <div className="sp-status-grid" role="radiogroup" aria-label="Watch status">
               {STATUS_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  className={`status-option${selectedStatus === opt.value ? ' status-option--active' : ''}`}
+                  className={`sp-status-btn ${selectedStatus === opt.value ? 'sp-status-btn--active' : ''}`}
                   onClick={() => setSelectedStatus(opt.value)}
                   role="radio"
                   aria-checked={selectedStatus === opt.value}
@@ -459,9 +551,8 @@ export default function SearchPage() {
               ))}
             </div>
 
-            {/* Confirm button */}
             <button
-              className="add-sheet-confirm-btn"
+              className="sp-confirm-btn"
               onClick={handleConfirmAdd}
               disabled={isAdding}
               type="button"
@@ -472,9 +563,9 @@ export default function SearchPage() {
         )}
       </BottomSheet>
 
-      {/* ── Toast notification ── */}
+      {/* ── Toast ─────────────────────────────────────────────────────────── */}
       {toast && (
-        <div className="toast" role="status" aria-live="polite">
+        <div className="sp-toast" role="status" aria-live="polite">
           {toast}
         </div>
       )}

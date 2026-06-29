@@ -1,343 +1,301 @@
-/* ─── Header ─── */
-.analytics-header-row {
+/* ─── Analytics Page Styling ───────────────────────────────────────────────── */
+
+.analytics-page {
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--bg-primary);
+  min-height: 100vh;
+}
+
+/* Header & Filters */
+.ap-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .ap-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.ap-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ap-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.ap-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.ap-header-filters {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.analytics-header-icon {
-  color: var(--color-brand);
-}
-
-/* ─── Grid layout ─── */
-.analytics-grid-2x2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-/* Summary Card */
-.summary-stat-card {
+.ap-filter-select-wrap {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+}
+
+.ap-filter-select {
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding-right: 8px;
+}
+
+.ap-toggle-pills {
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 4px;
+}
+
+.ap-toggle-pill {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ap-toggle-pill--active {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+/* 6-Card Stats Row */
+.ap-stats-row-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 576px) {
+  .ap-stats-row-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .ap-stats-row-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.ap-stat-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
-  padding: 16px;
-  text-align: center;
-  box-shadow: var(--card-shadow);
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 110px;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
 }
 
-.summary-stat-value {
-  font-size: var(--text-3xl);
-  font-weight: 800;
-  color: var(--color-brand);
-  line-height: 1.1;
-}
-
-.summary-stat-label {
-  font-size: var(--text-xs);
+.ap-stat-icon {
   color: var(--text-muted);
-  font-weight: 700;
+  opacity: 0.65;
+  margin-bottom: 6px;
+}
+
+.ap-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.ap-stat-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
   margin-top: 4px;
+  letter-spacing: 0.2px;
 }
 
-.summary-stat-sub {
-  font-size: 10px;
-  color: var(--text-secondary);
-  margin-top: 6px;
-  line-height: 1.3;
-}
-
-/* Star rating layout */
-.summary-rating-stars {
+/* Charts Containers */
+.ap-chart-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--card-shadow);
   display: flex;
-  gap: 2px;
-  color: var(--star-filled);
-  margin-top: 6px;
+  flex-direction: column;
 }
 
-/* ─── Genre Donut Chart ─── */
-.chart-container-donut {
+.ap-chart-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  letter-spacing: -0.2px;
+}
+
+/* Split Column Charts Row */
+.ap-charts-row-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .ap-charts-row-split {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Donut Chart Wrap & Center Label */
+.ap-chart-donut-wrap {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 10px 0;
+  margin: 10px auto;
+  width: 200px;
+  height: 200px;
 }
 
-.donut-center-lbl {
+.ap-donut-center {
   position: absolute;
+  pointer-events: none;
   text-align: center;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  pointer-events: none;
-}
-
-.donut-center-title {
-  font-size: var(--text-base);
-  font-weight: 800;
-  color: var(--text-primary);
+  justify-content: center;
   max-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.donut-center-count {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
+.ap-donut-center-lbl {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+/* Legends */
+.ap-legend-text {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 12px;
   font-weight: 600;
-  margin-top: 2px;
+  color: var(--text-secondary);
 }
 
-/* Genre Legend pills */
-.genre-legend-list {
+.ap-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Genre Pills */
+.ap-genre-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   justify-content: center;
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
-.genre-legend-pill {
+.ap-genre-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
-.genre-legend-dot {
-  width: 8px;
-  height: 8px;
+.ap-genre-pill-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  flex-shrink: 0;
 }
 
-.genre-legend-count {
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-/* ─── Monthly Activity Section ─── */
-.monthly-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.year-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.year-select-btn {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-primary);
-  font-weight: bold;
-}
-.year-select-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.year-label {
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-  min-width: 48px;
-  text-align: center;
-}
-
-.metric-toggle-group {
-  display: flex;
-  background: var(--bg-overlay);
-  border-radius: var(--radius-md);
-  padding: 2px;
-}
-
-.metric-toggle-btn {
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  border: none;
-  background: none;
-  color: var(--text-secondary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-family: var(--font-family);
-  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
-}
-
-.metric-toggle-btn--active {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-/* Custom Tooltip */
-.custom-chart-tooltip {
+/* Tooltips */
+.ap-custom-tooltip {
   background: var(--bg-elevated);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
-  box-shadow: var(--shadow-lg);
-  font-size: var(--text-xs);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  box-shadow: var(--card-shadow);
 }
 
-.custom-tooltip-title {
+.ap-tooltip-title {
   font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 6px;
+  margin: 0 0 4px 0;
   border-bottom: 1px solid var(--border-default);
   padding-bottom: 4px;
 }
 
-.custom-tooltip-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 2px;
-  color: var(--text-secondary);
-}
-
-.custom-tooltip-square {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-}
-
-.custom-tooltip-val {
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-left: auto;
-}
-
-/* ─── Ratings section count label ─── */
-.rating-bar-label {
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--text-secondary);
-}
-
-/* ─── Movie vs TV Split bar ─── */
-.split-visual-row {
-  display: flex;
-  width: 100%;
-  height: 24px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--bg-overlay);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.split-movie-bar {
-  height: 100%;
-  background: var(--color-brand);
-  transition: width 300ms ease;
-}
-
-.split-tv-bar {
-  height: 100%;
-  background: var(--color-secondary, #4a90e2);
-  transition: width 300ms ease;
-}
-
-.split-label-text {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: center;
-  margin-top: 8px;
-}
-
-/* ─── Wrapped Recap Card ─── */
-.wrapped-recap-card {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-dim) 100%);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  color: #000; /* Contrast on yellow/gold */
-  box-shadow: 0 10px 25px rgba(245, 197, 24, 0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.wrapped-header {
+.ap-tooltip-row {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 1.5px solid rgba(0,0,0,0.15);
-  padding-bottom: 8px;
+  gap: 16px;
+  font-size: 12px;
+  margin-top: 2px;
 }
 
-.wrapped-year {
-  font-size: var(--text-xl);
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-.wrapped-badge {
-  font-size: 10px;
-  font-weight: 800;
-  background: #000;
-  color: var(--color-brand);
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  text-transform: uppercase;
-}
-
-.wrapped-main-stat {
-  font-size: var(--text-3xl);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.wrapped-row-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.wrapped-metric-box {
+/* Empty Card */
+.ap-empty-card {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-
-.wrapped-metric-val {
-  font-size: var(--text-md);
-  font-weight: 800;
-}
-
-.wrapped-metric-lbl {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  opacity: 0.75;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--card-bg);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  margin-top: 24px;
 }

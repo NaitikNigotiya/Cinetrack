@@ -1,27 +1,23 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   SlidersHorizontal,
   LayoutGrid,
-  List,
   Heart,
-  ChevronRight,
   Film,
-  Check,
-  Trash2,
+  Plus,
+  Sparkles,
+  Star,
 } from 'lucide-react'
 
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
+import { getImageUrl } from '@/lib/tmdb'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 
 import type { WatchlistEntry, WatchStatus } from '@/types/app'
 import './WatchlistPage.css'
 
-// ─── Types & constants ────────────────────────────────────────────────────────
-
-type TabKey = 'all' | WatchStatus | 'favorites'
-type ViewMode = 'grid' | 'list'
-type SortKey = 'addedAt' | 'title' | 'rating' | 'year' | 'runtime'
+// ─── Constants & Option Mappings ──────────────────────────────────────────────
 
 const STATUS_LABELS: Record<WatchStatus, string> = {
   watching:      'Watching',
@@ -37,661 +33,548 @@ const STATUS_COLORS: Record<WatchStatus, string> = {
   dropped:       'var(--status-dropped)',
 }
 
-const STATUS_EMOJIS: Record<WatchStatus, string> = {
-  watching:      '👁',
-  completed:     '✓',
-  plan_to_watch: '🕐',
-  dropped:       '✗',
-}
+type SortKey = 'addedAt' | 'title' | 'rating' | 'year' | 'runtime'
 
-const ALL_STATUSES: WatchStatus[] = ['watching', 'completed', 'plan_to_watch', 'dropped']
-
-const SORT_OPTIONS: { label: string; value: SortKey }[] = [
-  { label: 'Date Added',  value: 'addedAt' },
-  { label: 'Title A–Z',  value: 'title' },
-  { label: 'Rating',     value: 'rating' },
-  { label: 'Year',       value: 'year' },
-  { label: 'Runtime',    value: 'runtime' },
-]
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-// Poster card (grid view)
-function PosterCard({
-  entry,
-  onNavigate,
-  onLongPress,
-  onToggleFavorite,
-}: {
-  entry: WatchlistEntry
-  onNavigate: () => void
-  onLongPress: () => void
-  onToggleFavorite: () => void
-}) {
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleTouchStart = () => {
-    longPressTimer.current = setTimeout(onLongPress, 500)
-  }
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current)
-  }
-
-  const poster = entry.posterPath
-    ? `${import.meta.env.VITE_TMDB_IMAGE_W500}${entry.posterPath}`
-    : null
-
-  return (
-    <article
-      className="poster-card"
-      onClick={onNavigate}
-      onContextMenu={(e) => { e.preventDefault(); onLongPress() }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchMove={handleTouchEnd}
-      aria-label={entry.title}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onNavigate()}
-    >
-      <div className="poster-card-image-wrapper">
-        {poster ? (
-          <img src={poster} alt={entry.title} className="poster-card-image" loading="lazy" />
-        ) : (
-          <div className="poster-card-no-image">
-            <Film size={28} color="var(--text-muted)" aria-hidden="true" />
-          </div>
-        )}
-
-        <div className="poster-card-gradient" aria-hidden="true" />
-
-        {/* Status badge */}
-        <span
-          className="poster-card-status"
-          style={{ background: STATUS_COLORS[entry.status] }}
-          aria-label={STATUS_LABELS[entry.status]}
-        >
-          {STATUS_LABELS[entry.status]}
-        </span>
-
-        {/* Rating badge */}
-        {entry.rating !== null && (
-          <span className="poster-card-rating">⭐ {entry.rating}</span>
-        )}
-
-        {/* Heart button */}
-        <button
-          className={`poster-card-heart ${entry.isFavorite ? 'poster-card-heart--filled' : 'poster-card-heart--empty'}`}
-          onClick={(e) => { e.stopPropagation(); onToggleFavorite() }}
-          aria-label={entry.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          type="button"
-        >
-          <Heart
-            size={14}
-            fill={entry.isFavorite ? '#ff4757' : 'none'}
-            stroke={entry.isFavorite ? '#ff4757' : 'currentColor'}
-          />
-        </button>
-      </div>
-
-      <div className="poster-card-info">
-        <p className="poster-card-title">{entry.title}</p>
-        <p className="poster-card-meta">
-          {entry.year > 0 ? entry.year : '—'} · {entry.type === 'movie' ? 'Movie' : 'TV'}
-        </p>
-      </div>
-    </article>
-  )
-}
-
-// List card (list view) with swipe-to-delete
-function ListCard({
-  entry,
-  onNavigate,
-  onRemove,
-}: {
-  entry: WatchlistEntry
-  onNavigate: () => void
-  onRemove: () => void
-}) {
-  const [swipeX, setSwipeX] = useState(0)
-  const [swiping, setSwiping] = useState(false)
-  const startX = useRef(0)
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0]?.clientX ?? 0
-    setSwiping(true)
-  }
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const dx = (e.touches[0]?.clientX ?? 0) - startX.current
-    if (dx < 0) setSwipeX(Math.max(dx, -80))
-  }
-  const handleTouchEnd = () => {
-    setSwiping(false)
-    setSwipeX(swipeX < -40 ? -80 : 0)
-  }
-
-  const poster = entry.posterPath
-    ? `${import.meta.env.VITE_TMDB_IMAGE_W200}${entry.posterPath}`
-    : null
-
-  const genres = entry.genres.slice(0, 2).join(' · ')
-
-  return (
-    <div className="list-card-wrapper">
-      {/* Revealed delete action */}
-      <button
-        className="list-card-delete-action"
-        onClick={onRemove}
-        aria-label={`Remove ${entry.title}`}
-        type="button"
-      >
-        <Trash2 size={18} />
-        <span>Remove</span>
-      </button>
-
-      {/* Swipeable card */}
-      <div
-        className="list-card"
-        style={{
-          transform: `translateX(${swipeX}px)`,
-          transition: swiping ? 'none' : 'transform 200ms ease',
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={() => swipeX === 0 && onNavigate()}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onNavigate()}
-        aria-label={entry.title}
-      >
-        {poster ? (
-          <img src={poster} alt={entry.title} className="list-card-poster" loading="lazy" />
-        ) : (
-          <div className="list-card-no-poster">
-            <Film size={20} color="var(--text-muted)" aria-hidden="true" />
-          </div>
-        )}
-
-        <div className="list-card-content">
-          <p className="list-card-title">{entry.title}</p>
-          <p className="list-card-meta">
-            {entry.year > 0 ? entry.year : '—'}
-            {' · '}
-            {entry.type === 'movie' ? 'Movie' : 'TV'}
-            {genres ? ` · ${genres}` : ''}
-          </p>
-          <span
-            className="list-card-status-badge"
-            style={{ background: STATUS_COLORS[entry.status] }}
-          >
-            {STATUS_LABELS[entry.status]}
-          </span>
-          {entry.rating !== null && (
-            <span className="list-card-rating">⭐ {entry.rating}</span>
-          )}
-        </div>
-
-        <ChevronRight size={18} className="list-card-chevron" aria-hidden="true" />
-      </div>
-    </div>
-  )
-}
-
-// Skeleton loading grid
-function LoadingGrid() {
-  return (
-    <div className="watchlist-grid-skeleton">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="skeleton-poster-card">
-          <div className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 'var(--radius-md)' }} />
-          <div className="skeleton" style={{ height: 13, borderRadius: 'var(--radius-sm)' }} />
-          <div className="skeleton" style={{ height: 11, width: '55%', borderRadius: 'var(--radius-sm)' }} />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WatchlistPage() {
   const navigate = useNavigate()
-  const { entries, isLoading, total, totalRuntime, updateEntry, removeEntry } = useWatchlist()
+  const { entries, isLoading, updateEntry } = useWatchlist()
+
+  // View settings
+  const [viewType, setViewType] = useState<'smart' | 'status'>('smart')
+  const [activeStatusTab, setActiveStatusTab] = useState<'all' | WatchStatus>('all')
+
+  // Filter Bottom Sheet states
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<SortKey>('addedAt')
+  const [filterType, setFilterType] = useState<'all' | 'movie' | 'tv'>('all')
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([])
+
+  // Temporary filter states inside sheet
+  const [tempSortBy, setTempSortBy] = useState<SortKey>(sortBy)
+  const [tempFilterType, setTempFilterType] = useState<'all' | 'movie' | 'tv'>(filterType)
+  const [tempGenres, setTempGenres] = useState<string[]>(selectedGenres)
+
+  // ── All unique genres from current watchlist ──
+  const availableGenres = useMemo(() => {
+    const genres = new Set<string>()
+    entries.forEach((e) => {
+      e.genres?.forEach((g) => genres.add(g))
+    })
+    return Array.from(genres).sort()
+  }, [entries])
+
+  // ── Apply filters to general list ──
+  const filteredAndSortedList = useMemo(() => {
+    let list = [...entries]
+
+    // Media type filter
+    if (filterType !== 'all') {
+      list = list.filter((e) => e.type === filterType)
+    }
+
+    // Genres filter
+    if (selectedGenres.length > 0) {
+      list = list.filter((e) => e.genres?.some((g) => selectedGenres.includes(g)))
+    }
+
+    // Status tab filter (only in status view)
+    if (viewType === 'status' && activeStatusTab !== 'all') {
+      list = list.filter((e) => e.status === activeStatusTab)
+    }
+
+    // Sort logic
+    return list.sort((a, b) => {
+      if (sortBy === 'title') {
+        return a.title.localeCompare(b.title)
+      }
+      if (sortBy === 'rating') {
+        return (b.rating ?? 0) - (a.rating ?? 0)
+      }
+      if (sortBy === 'year') {
+        return b.year - a.year
+      }
+      if (sortBy === 'runtime') {
+        return (b.totalRuntime ?? 0) - (a.totalRuntime ?? 0)
+      }
+      // addedAt (default)
+      const dateA = a.addedAt?.seconds ?? 0
+      const dateB = b.addedAt?.seconds ?? 0
+      return dateB - dateA // newest first
+    })
+  }, [entries, filterType, selectedGenres, viewType, activeStatusTab, sortBy])
+
+  // ── Smart View Categorizations (Plan to Watch titles only) ──
+  const smartCategories = useMemo(() => {
+    // Base plan_to_watch entries after general filters are applied (but ignoring activeStatusTab)
+    let planToWatchBase = entries.filter((e) => e.status === 'plan_to_watch')
+
+    if (filterType !== 'all') {
+      planToWatchBase = planToWatchBase.filter((e) => e.type === filterType)
+    }
+    if (selectedGenres.length > 0) {
+      planToWatchBase = planToWatchBase.filter((e) => e.genres?.some((g) => selectedGenres.includes(g)))
+    }
+
+    // Category 1: Waiting for Release (release year is in the future)
+    const waitingForRelease = planToWatchBase.filter((e) => e.year > new Date().getFullYear())
+
+    // Category 2: This Weekend (added in the last 7 days, excluding future titles)
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const thisWeekend = planToWatchBase.filter((e) => {
+      if (e.year > new Date().getFullYear()) return false
+      const addedDate = e.addedAt?.toDate ? e.addedAt.toDate() : new Date()
+      return addedDate >= sevenDaysAgo
+    })
+
+    // Category 3: Watch Soon (highest user ratings, excluding recent/future)
+    const watchSoon = planToWatchBase
+      .filter((e) => {
+        if (e.year > new Date().getFullYear()) return false
+        const addedDate = e.addedAt?.toDate ? e.addedAt.toDate() : new Date()
+        if (addedDate >= sevenDaysAgo) return false
+        return e.rating !== null && e.rating >= 7
+      })
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+
+    // Category 4: Maybe Later (all remaining plan_to_watch)
+    const takenIds = new Set([
+      ...waitingForRelease.map((e) => e.titleId),
+      ...thisWeekend.map((e) => e.titleId),
+      ...watchSoon.map((e) => e.titleId),
+    ])
+
+    const maybeLater = planToWatchBase
+      .filter((e) => !takenIds.has(e.titleId))
+      .sort((a, b) => {
+        const dateA = a.addedAt?.seconds ?? 0
+        const dateB = b.addedAt?.seconds ?? 0
+        return dateA - dateB // oldest first
+      })
+
+    return {
+      watchSoon,
+      thisWeekend,
+      waitingForRelease,
+      maybeLater,
+    }
+  }, [entries, filterType, selectedGenres])
+
+  // ── Actions ──
+  const handleToggleFavorite = async (entry: WatchlistEntry) => {
+    await updateEntry(entry.titleId, { isFavorite: !entry.isFavorite })
+  }
+
+  const handleOpenFilters = () => {
+    setTempSortBy(sortBy)
+    setTempFilterType(filterType)
+    setTempGenres(selectedGenres)
+    setIsFilterOpen(true)
+  }
+
+  const handleApplyFilters = () => {
+    setSortBy(tempSortBy)
+    setFilterType(tempFilterType)
+    setSelectedGenres(tempGenres)
+    setIsFilterOpen(false)
+  }
+
+  const handleResetFilters = () => {
+    setTempSortBy('addedAt')
+    setTempFilterType('all')
+    setTempGenres([])
+  }
+
+  const toggleTempGenre = (genre: string) => {
+    setTempGenres((prev) =>
+      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
+    )
+  }
+
+  // ── Render ──
 
   if (isLoading) {
     return (
-      <div style={{ padding: '16px' }}>
-        <div className="skeleton" style={{ height: 24, width: '60%', marginBottom: 16 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 'var(--radius-md)' }} />
+      <div className="page-wrapper watchlist-page" style={{ padding: 24 }}>
+        <div className="skeleton" style={{ height: 40, width: '40%', marginBottom: 20 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 'var(--radius-lg)' }} />
           ))}
         </div>
       </div>
     )
   }
 
-  // ── Local UI state ─────────────────────────────────────────────────────────
-  const [activeTab,         setActiveTab]         = useState<TabKey>('all')
-  const [viewMode,          setViewMode]          = useState<ViewMode>('grid')
-  const [isFilterOpen,      setIsFilterOpen]      = useState(false)
-  const [quickEntry,        setQuickEntry]        = useState<WatchlistEntry | null>(null)
-  const [isRemoveConfirming, setIsRemoveConfirming] = useState(false)
-
-  // Pending filter state (applied when sheet closes)
-  const [sortBy,       setSortBy]       = useState<SortKey>('addedAt')
-  const [filterType,   setFilterType]   = useState<'all' | 'movie' | 'tv'>('all')
-  const [filterGenres, setFilterGenres] = useState<string[]>([])
-
-  // Pending state inside filter sheet (separate so user can cancel)
-  const [pendingSort,         setPendingSort]         = useState<SortKey>(sortBy)
-  const [pendingType,         setPendingType]         = useState<typeof filterType>(filterType)
-  const [pendingGenres,       setPendingGenres]       = useState<string[]>(filterGenres)
-
-  // ── Computed stats ─────────────────────────────────────────────────────────
-  const favorites        = entries.filter((e) => e.isFavorite)
-  const totalHours       = Math.round(totalRuntime / 60)
-  const favoritesCount   = favorites.length
-
-  // ── All unique genres from the watchlist ───────────────────────────────────
-  const allGenres = useMemo(
-    () => [...new Set(entries.flatMap((e) => e.genres))].sort(),
-    [entries],
-  )
-
-  // ── Tab counts ─────────────────────────────────────────────────────────────
-  const countByStatus = useMemo(() => {
-    const counts: Record<WatchStatus, number> = {
-      watching: 0, completed: 0, plan_to_watch: 0, dropped: 0,
-    }
-    entries.forEach((e) => { counts[e.status]++ })
-    return counts
-  }, [entries])
-
-  const TABS: { key: TabKey; label: string; count: number }[] = [
-    { key: 'all',          label: 'All',           count: total },
-    { key: 'watching',     label: 'Watching',      count: countByStatus.watching },
-    { key: 'completed',    label: 'Completed',     count: countByStatus.completed },
-    { key: 'plan_to_watch',label: 'Plan to Watch', count: countByStatus.plan_to_watch },
-    { key: 'dropped',      label: 'Dropped',       count: countByStatus.dropped },
-    { key: 'favorites',    label: 'Favorites',     count: favoritesCount },
-  ]
-
-  // ── Filtered + sorted entries ──────────────────────────────────────────────
-  const displayedEntries = useMemo(() => {
-    let filtered = entries
-
-    // Tab filter
-    if (activeTab === 'favorites') {
-      filtered = filtered.filter((e) => e.isFavorite)
-    } else if (activeTab !== 'all') {
-      filtered = filtered.filter((e) => e.status === activeTab)
-    }
-
-    // Type filter
-    if (filterType !== 'all') {
-      filtered = filtered.filter((e) => e.type === filterType)
-    }
-
-    // Genre filter
-    if (filterGenres.length > 0) {
-      filtered = filtered.filter((e) =>
-        filterGenres.some((g) => e.genres.includes(g)),
-      )
-    }
-
-    // Sort
-    return [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case 'title':   return a.title.localeCompare(b.title)
-        case 'rating':  return (b.rating ?? -1) - (a.rating ?? -1)
-        case 'year':    return b.year - a.year
-        case 'runtime': return b.totalRuntime - a.totalRuntime
-        default:        return b.updatedAt.seconds - a.updatedAt.seconds
-      }
-    })
-  }, [entries, activeTab, filterType, filterGenres, sortBy])
-
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleNavigate = (entry: WatchlistEntry) => {
-    navigate(`/watchlist/${encodeURIComponent(entry.titleId)}`)
-  }
-
-  const handleToggleFavorite = (entry: WatchlistEntry) => {
-    void updateEntry(entry.titleId, { isFavorite: !entry.isFavorite })
-  }
-
-  const handleChangeStatus = (titleId: string, status: WatchStatus) => {
-    void updateEntry(titleId, { status })
-    setQuickEntry(null)
-  }
-
-  const handleRemove = (titleId: string) => {
-    void removeEntry(titleId)
-    setQuickEntry(null)
-  }
-
-  // Filter sheet open/close
-  const openFilter = () => {
-    setPendingSort(sortBy)
-    setPendingType(filterType)
-    setPendingGenres(filterGenres)
-    setIsFilterOpen(true)
-  }
-
-  const closeFilter = () => {
-    // Apply pending changes when sheet closes (any method)
-    setSortBy(pendingSort)
-    setFilterType(pendingType)
-    setFilterGenres(pendingGenres)
-    setIsFilterOpen(false)
-  }
-
-  const resetFilter = () => {
-    setPendingSort('addedAt')
-    setPendingType('all')
-    setPendingGenres([])
-  }
-
-  const togglePendingGenre = (genre: string) => {
-    setPendingGenres((prev) =>
-      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
-    )
-  }
-
-  const hasActiveFilters =
-    sortBy !== 'addedAt' || filterType !== 'all' || filterGenres.length > 0
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+  const isWatchlistEmpty = entries.length === 0
 
   return (
-    <div className="watchlist-page">
+    <div className="page-wrapper watchlist-page">
 
-      {/* ── Header ── */}
-      <div className="watchlist-header">
-        <div className="watchlist-header-row">
-          <h1 className="watchlist-title">My Watchlist</h1>
+      {/* ── HEADER ── */}
+      <header className="wl-header">
+        <div className="wl-header-left">
+          <h1 className="wl-title">My Watchlist</h1>
+          <p className="wl-count-label">{entries.length} items logged</p>
+        </div>
+        <div className="wl-header-actions">
+          <button className="wl-btn-add-movie" onClick={() => navigate('/search')} type="button">
+            <Plus size={16} /> Add Movie
+          </button>
           <button
-            className={`watchlist-filter-btn${hasActiveFilters ? ' watchlist-filter-btn--active' : ''}`}
-            onClick={openFilter}
-            aria-label="Sort and filter"
+            className={`wl-filter-icon-btn ${selectedGenres.length > 0 || filterType !== 'all' || sortBy !== 'addedAt' ? 'wl-filter-icon-btn--active' : ''}`}
+            onClick={handleOpenFilters}
+            aria-label="Filter watchlist"
             type="button"
           >
             <SlidersHorizontal size={18} />
           </button>
         </div>
+      </header>
 
-        {/* Stats strip */}
-        <p className="watchlist-stats" aria-label="Watchlist statistics">
-          <span>{total} Titles</span>
-          <span className="watchlist-stats-sep" aria-hidden="true">•</span>
-          <span>{totalHours} hrs watched</span>
-          <span className="watchlist-stats-sep" aria-hidden="true">•</span>
-          <span>{favoritesCount} Favorites</span>
-        </p>
-      </div>
-
-      {/* ── Status tabs (sticky) ── */}
-      <div className="status-tabs-container" role="tablist" aria-label="Filter by status">
-        <div className="status-tabs-row">
-          {TABS.map(({ key, label, count }) => (
-            <button
-              key={key}
-              className={`status-tab${activeTab === key ? ' status-tab--active' : ''}`}
-              onClick={() => setActiveTab(key)}
-              role="tab"
-              aria-selected={activeTab === key}
-              type="button"
-            >
-              {label}
-              <span className="status-tab-badge">{count}</span>
-            </button>
-          ))}
+      {/* ── EMPTY STATE ── */}
+      {isWatchlistEmpty ? (
+        <div className="wl-empty-state">
+          <span className="wl-empty-emoji" role="img" aria-label="movie projector">📽️</span>
+          <h2 className="wl-empty-title">Your watchlist is empty</h2>
+          <p className="wl-empty-desc">Search for movies and TV shows to start tracking</p>
+          <button className="wl-empty-cta" onClick={() => navigate('/search')} type="button">
+            Search Now
+          </button>
         </div>
-      </div>
-
-      {/* ── View toggle ── */}
-      <div className="view-controls-row" role="group" aria-label="View mode">
-        <button
-          className={`view-toggle-btn${viewMode === 'grid' ? ' view-toggle-btn--active' : ''}`}
-          onClick={() => setViewMode('grid')}
-          aria-label="Grid view"
-          aria-pressed={viewMode === 'grid'}
-          type="button"
-        >
-          <LayoutGrid size={18} />
-        </button>
-        <button
-          className={`view-toggle-btn${viewMode === 'list' ? ' view-toggle-btn--active' : ''}`}
-          onClick={() => setViewMode('list')}
-          aria-label="List view"
-          aria-pressed={viewMode === 'list'}
-          type="button"
-        >
-          <List size={18} />
-        </button>
-      </div>
-
-      {/* ── Content ── */}
-      <div className="watchlist-content">
-        {/* Loading */}
-        {isLoading && <LoadingGrid />}
-
-        {/* Empty state */}
-        {!isLoading && displayedEntries.length === 0 && (
-          <div className="watchlist-empty animate-fade-in">
-            <span className="watchlist-empty-emoji" aria-hidden="true">
-              {activeTab === 'all' ? '🎬' : activeTab === 'favorites' ? '❤️' : '📋'}
-            </span>
-            <p className="watchlist-empty-title">
-              {activeTab === 'all'
-                ? 'Your watchlist is empty'
-                : activeTab === 'favorites'
-                  ? 'No favorites yet'
-                  : `${TABS.find((t) => t.key === activeTab)?.label ?? ''} list is empty`}
-            </p>
-            <p className="watchlist-empty-sub">
-              {activeTab === 'all'
-                ? 'Search for movies and TV shows to start tracking what you watch.'
-                : activeTab === 'favorites'
-                  ? 'Tap the ❤️ on any title to mark it as a favorite.'
-                  : `Titles you mark as "${TABS.find((t) => t.key === activeTab)?.label ?? ''}" will appear here.`}
-            </p>
-            {activeTab === 'all' && (
+      ) : (
+        <>
+          {/* View Toggles & Status tab row */}
+          <div className="wl-control-row">
+            <div className="wl-mode-toggle-group">
               <button
-                className="watchlist-empty-cta"
-                onClick={() => navigate('/search')}
+                className={`wl-mode-btn ${viewType === 'smart' ? 'wl-mode-btn--active' : ''}`}
+                onClick={() => setViewType('smart')}
                 type="button"
               >
-                Search to add titles
+                <Sparkles size={13} /> Smart View
               </button>
-            )}
-          </div>
-        )}
-
-        {/* Grid view */}
-        {!isLoading && displayedEntries.length > 0 && viewMode === 'grid' && (
-          <div
-            className="watchlist-grid animate-fade-in"
-            role="list"
-            aria-label={`${displayedEntries.length} titles`}
-          >
-            {displayedEntries.map((entry) => (
-              <div key={entry.titleId} role="listitem">
-                <PosterCard
-                  entry={entry}
-                  onNavigate={() => handleNavigate(entry)}
-                  onLongPress={() => setQuickEntry(entry)}
-                  onToggleFavorite={() => handleToggleFavorite(entry)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* List view */}
-        {!isLoading && displayedEntries.length > 0 && viewMode === 'list' && (
-          <div
-            className="watchlist-list animate-fade-in"
-            role="list"
-            aria-label={`${displayedEntries.length} titles`}
-          >
-            {displayedEntries.map((entry) => (
-              <div key={entry.titleId} role="listitem">
-                <ListCard
-                  entry={entry}
-                  onNavigate={() => handleNavigate(entry)}
-                  onRemove={() => handleRemove(entry.titleId)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Quick action bottom sheet (long press) ── */}
-      <BottomSheet
-        isOpen={quickEntry !== null}
-        onClose={() => setQuickEntry(null)}
-        label="Quick actions"
-      >
-        {quickEntry && (
-          <div className="quick-action-sheet">
-            <p className="quick-action-title">{quickEntry.title}</p>
-
-            <p className="quick-action-section-label">Change status</p>
-            <div className="quick-status-grid">
-              {ALL_STATUSES.map((status) => (
-                <button
-                  key={status}
-                  className={`quick-status-btn${quickEntry.status === status ? ' quick-status-btn--active' : ''}`}
-                  onClick={() => handleChangeStatus(quickEntry.titleId, status)}
-                  type="button"
-                >
-                  <span>{STATUS_EMOJIS[status]}</span>
-                  <span>{STATUS_LABELS[status]}</span>
-                  {quickEntry.status === status && <Check size={14} aria-hidden="true" />}
-                </button>
-              ))}
-            </div>
-
-            <div className="quick-action-row">
               <button
-                className="quick-action-btn"
-                onClick={() => { handleToggleFavorite(quickEntry); setQuickEntry(null) }}
+                className={`wl-mode-btn ${viewType === 'status' ? 'wl-mode-btn--active' : ''}`}
+                onClick={() => setViewType('status')}
                 type="button"
               >
-                <Heart
-                  size={18}
-                  fill={quickEntry.isFavorite ? '#ff4757' : 'none'}
-                  stroke={quickEntry.isFavorite ? '#ff4757' : 'currentColor'}
-                />
-                {quickEntry.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                <LayoutGrid size={13} /> Status View
               </button>
-
-              {!isRemoveConfirming ? (
-                <button
-                  className="quick-action-btn quick-action-btn--danger"
-                  onClick={() => setIsRemoveConfirming(true)}
-                  type="button"
-                >
-                  <Trash2 size={18} />
-                  Remove from watchlist
-                </button>
-              ) : (
-                <button
-                  className="quick-action-btn quick-action-btn--danger"
-                  onClick={() => { handleRemove(quickEntry.titleId); setIsRemoveConfirming(false) }}
-                  type="button"
-                >
-                  <Trash2 size={18} />
-                  Tap again to confirm removal
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </BottomSheet>
-
-      {/* ── Filter / Sort bottom sheet ── */}
-      <BottomSheet
-        isOpen={isFilterOpen}
-        onClose={closeFilter}
-        label="Sort and filter"
-      >
-        <div className="filter-sheet">
-          <p className="filter-sheet-title">Sort &amp; Filter</p>
-
-          {/* Sort */}
-          <div className="filter-section">
-            <p className="filter-section-label">Sort by</p>
-            <div className="sort-options">
-              {SORT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  className={`sort-option${pendingSort === opt.value ? ' sort-option--active' : ''}`}
-                  onClick={() => setPendingSort(opt.value)}
-                  type="button"
-                >
-                  {opt.label}
-                  {pendingSort === opt.value && (
-                    <Check size={16} className="sort-option-check" aria-hidden="true" />
-                  )}
-                </button>
-              ))}
             </div>
           </div>
 
-          {/* Type filter */}
-          <div className="filter-section">
-            <p className="filter-section-label">Type</p>
-            <div className="type-pills">
-              {(['all', 'movie', 'tv'] as const).map((t) => (
-                <button
-                  key={t}
-                  className={`type-pill${pendingType === t ? ' type-pill--active' : ''}`}
-                  onClick={() => setPendingType(t)}
-                  type="button"
-                >
-                  {t === 'all' ? 'All' : t === 'movie' ? 'Movies' : 'TV Shows'}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* ── SMART SECTIONS VIEW ── */}
+          {viewType === 'smart' && (
+            <div className="wl-smart-container">
+              {/* Watch Soon Column */}
+              <div className="wl-smart-column">
+                <h3 className="wl-column-title">Watch Soon</h3>
+                <span className="wl-column-badge">{smartCategories.watchSoon.length}</span>
+                <div className="wl-column-cards-list">
+                  {smartCategories.watchSoon.map((e) => (
+                    <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />
+                  ))}
+                  {smartCategories.watchSoon.length === 0 && <p className="wl-column-empty">No matching titles</p>}
+                </div>
+              </div>
 
-          {/* Genre filter */}
-          {allGenres.length > 0 && (
-            <div className="filter-section">
-              <p className="filter-section-label">Genre</p>
-              <div className="genre-chips">
-                {allGenres.map((genre) => (
-                  <button
-                    key={genre}
-                    className={`genre-chip${pendingGenres.includes(genre) ? ' genre-chip--active' : ''}`}
-                    onClick={() => togglePendingGenre(genre)}
-                    aria-pressed={pendingGenres.includes(genre)}
-                    type="button"
-                  >
-                    {genre}
-                  </button>
-                ))}
+              {/* This Weekend Column */}
+              <div className="wl-smart-column">
+                <h3 className="wl-column-title">This Weekend</h3>
+                <span className="wl-column-badge">{smartCategories.thisWeekend.length}</span>
+                <div className="wl-column-cards-list">
+                  {smartCategories.thisWeekend.map((e) => (
+                    <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />
+                  ))}
+                  {smartCategories.thisWeekend.length === 0 && <p className="wl-column-empty">No matching titles</p>}
+                </div>
+              </div>
+
+              {/* Waiting for Release Column */}
+              <div className="wl-smart-column">
+                <h3 className="wl-column-title">Waiting for Release</h3>
+                <span className="wl-column-badge">{smartCategories.waitingForRelease.length}</span>
+                <div className="wl-column-cards-list">
+                  {smartCategories.waitingForRelease.map((e) => (
+                    <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />
+                  ))}
+                  {smartCategories.waitingForRelease.length === 0 && <p className="wl-column-empty">No matching titles</p>}
+                </div>
+              </div>
+
+              {/* Maybe Later Column */}
+              <div className="wl-smart-column">
+                <h3 className="wl-column-title">Maybe Later</h3>
+                <span className="wl-column-badge">{smartCategories.maybeLater.length}</span>
+                <div className="wl-column-cards-list">
+                  {smartCategories.maybeLater.map((e) => (
+                    <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />
+                  ))}
+                  {smartCategories.maybeLater.length === 0 && <p className="wl-column-empty">No matching titles</p>}
+                </div>
               </div>
             </div>
           )}
 
+          {/* ── STATUS TABS VIEW ── */}
+          {viewType === 'status' && (
+            <div className="wl-status-container">
+              {/* Horizontal scroll tabs for statuses */}
+              <div className="wl-status-tabs-row" role="tablist">
+                {(['all', 'watching', 'completed', 'plan_to_watch', 'dropped'] as const).map((tab) => {
+                  const count = tab === 'all'
+                    ? entries.length
+                    : entries.filter((e) => e.status === tab).length
+                  const label = tab === 'all' ? 'All' : STATUS_LABELS[tab]
+                  return (
+                    <button
+                      key={tab}
+                      className={`wl-status-tab-btn ${activeStatusTab === tab ? 'wl-status-tab-btn--active' : ''}`}
+                      onClick={() => setActiveStatusTab(tab)}
+                      role="tab"
+                      aria-selected={activeStatusTab === tab}
+                      type="button"
+                    >
+                      {label}
+                      <span className="wl-status-tab-count">{count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Grid block */}
+              {filteredAndSortedList.length > 0 ? (
+                <div className="wl-status-grid">
+                  {filteredAndSortedList.map((e) => {
+                    const poster = getImageUrl(e.posterPath, 'w500')
+                    return (
+                      <article
+                        key={e.titleId}
+                        className="wl-grid-card"
+                        onClick={() => navigate(`/title/${e.titleId}`)}
+                      >
+                        <div className="wl-grid-poster-wrap">
+                          {poster ? (
+                            <img src={poster} alt={e.title} className="wl-grid-poster-img" loading="lazy" />
+                          ) : (
+                            <div className="wl-grid-no-poster"><Film size={24} /></div>
+                          )}
+                          <div className="wl-grid-overlay" />
+                          <span
+                            className="wl-grid-status-badge"
+                            style={{ background: STATUS_COLORS[e.status] }}
+                          >
+                            {STATUS_LABELS[e.status]}
+                          </span>
+                          {e.rating && <span className="wl-grid-rating-badge">⭐ {e.rating}</span>}
+                        </div>
+                        <div className="wl-grid-info">
+                          <p className="wl-grid-card-title">{e.title}</p>
+                          <p className="wl-grid-card-year">{e.year > 0 ? e.year : '—'}</p>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="wl-tab-empty-msg">No titles match this watch status filter.</p>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── MOBILE ADD FAB BUTTON ── */}
+      <button
+        className="wl-mobile-add-fab mobile-only"
+        onClick={() => navigate('/search')}
+        aria-label="Add movie"
+        type="button"
+      >
+        <Plus size={24} />
+      </button>
+
+      {/* ── FILTER BOTTOM SHEET ── */}
+      <BottomSheet
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        label="Filter and Sort"
+      >
+        <div className="wl-filter-sheet-body">
+          {/* Sort selection */}
+          <section className="wl-filter-section">
+            <h4 className="wl-filter-heading">Sort by</h4>
+            <div className="wl-filter-radio-group">
+              {[
+                { key: 'addedAt', label: 'Date Added' },
+                { key: 'title', label: 'Title A-Z' },
+                { key: 'rating', label: 'Rating' },
+                { key: 'year', label: 'Year' },
+                { key: 'runtime', label: 'Runtime' },
+              ].map((opt) => (
+                <label key={opt.key} className="wl-filter-radio-lbl">
+                  <input
+                    type="radio"
+                    name="sortBy"
+                    checked={tempSortBy === opt.key}
+                    onChange={() => setTempSortBy(opt.key as SortKey)}
+                    className="wl-filter-radio-input"
+                  />
+                  <span className="wl-filter-radio-custom" />
+                  <span className="wl-filter-radio-text">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* Type filter */}
+          <section className="wl-filter-section">
+            <h4 className="wl-filter-heading">Filter Type</h4>
+            <div className="wl-filter-pills-row">
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'movie', label: 'Movies' },
+                { value: 'tv', label: 'TV Shows' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`wl-filter-pill-btn ${tempFilterType === opt.value ? 'wl-filter-pill-btn--active' : ''}`}
+                  onClick={() => setTempFilterType(opt.value as any)}
+                  type="button"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Genres filter */}
+          {availableGenres.length > 0 && (
+            <section className="wl-filter-section">
+              <h4 className="wl-filter-heading">Filter Genre</h4>
+              <div className="wl-filter-genre-grid">
+                {availableGenres.map((genre) => {
+                  const isActive = tempGenres.includes(genre)
+                  return (
+                    <button
+                      key={genre}
+                      className={`wl-filter-genre-chip ${isActive ? 'wl-filter-genre-chip--active' : ''}`}
+                      onClick={() => toggleTempGenre(genre)}
+                      type="button"
+                    >
+                      {genre}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
           {/* Actions */}
-          <div className="filter-actions">
-            <button className="filter-apply-btn" onClick={closeFilter} type="button">
-              Apply
+          <div className="wl-filter-actions">
+            <button className="wl-filter-apply-btn" onClick={handleApplyFilters} type="button">
+              Apply Filters
             </button>
-            <button className="filter-reset-btn" onClick={resetFilter} type="button">
-              Reset
+            <button className="wl-filter-reset-btn" onClick={handleResetFilters} type="button">
+              Reset Filters
             </button>
           </div>
         </div>
       </BottomSheet>
     </div>
+  )
+}
+
+// ─── Smart View Column Card ──────────────────────────────────────────────────
+
+function SmartCard({
+  entry,
+  onNavigate,
+  onToggleFavorite,
+}: {
+  entry: WatchlistEntry
+  onNavigate: () => void
+  onToggleFavorite: () => void
+}) {
+  const backdrop = entry.backdropPath
+    ? getImageUrl(entry.backdropPath, 'w780')
+    : getImageUrl(entry.posterPath, 'w500')
+
+  const dateAddedStr = useMemo(() => {
+    if (!entry.addedAt) return ''
+    const date = entry.addedAt.toDate()
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  }, [entry.addedAt])
+
+  return (
+    <article className="wl-smart-card" onClick={onNavigate}>
+      {/* Top visual block */}
+      <div className="wl-smart-card-top">
+        {backdrop ? (
+          <img src={backdrop} alt={entry.title} className="wl-smart-card-img" loading="lazy" />
+        ) : (
+          <div className="wl-smart-card-img-ph"><Film size={20} /></div>
+        )}
+        <div className="wl-smart-card-overlay" />
+        <span
+          className="wl-smart-card-status-badge"
+          style={{ background: STATUS_COLORS[entry.status] }}
+        >
+          {STATUS_LABELS[entry.status]}
+        </span>
+        {entry.rating && <span className="wl-smart-card-rating-badge">⭐ {entry.rating}</span>}
+
+        {/* Favorite Heart */}
+        <button
+          className={`wl-smart-card-heart ${entry.isFavorite ? 'wl-smart-card-heart--active' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite() }}
+          aria-label="Toggle favorite"
+          type="button"
+        >
+          <Heart size={14} fill={entry.isFavorite ? 'currentColor' : 'none'} />
+        </button>
+
+        {/* Overlay Title block */}
+        <div className="wl-smart-card-title-block">
+          <h4 className="wl-smart-card-title">{entry.title}</h4>
+          <span className="wl-smart-card-year">{entry.year > 0 ? entry.year : '—'}</span>
+        </div>
+      </div>
+
+      {/* Bottom info block */}
+      <div className="wl-smart-card-bottom">
+        {entry.genres && entry.genres.length > 0 && (
+          <div className="wl-smart-card-genres">
+            {entry.genres.slice(0, 2).map((g) => (
+              <span key={g} className="wl-smart-genre-chip">{g}</span>
+            ))}
+          </div>
+        )}
+
+        <div className="wl-smart-card-footer">
+          {entry.rating && (
+            <div className="wl-smart-stars" aria-label={`Rating ${entry.rating}`}>
+              {Array.from({ length: 5 }).map((_, i) => {
+                const val = (i + 1) * 2
+                const isHalf = entry.rating! >= val - 1 && entry.rating! < val
+                const isFull = entry.rating! >= val
+                return (
+                  <Star
+                    key={i}
+                    size={11}
+                    fill={isFull ? 'var(--star-filled)' : 'none'}
+                    color={isFull || isHalf ? 'var(--star-filled)' : 'var(--text-muted)'}
+                  />
+                )
+              })}
+            </div>
+          )}
+          <span className="wl-smart-added-date">Added {dateAddedStr}</span>
+        </div>
+      </div>
+    </article>
   )
 }

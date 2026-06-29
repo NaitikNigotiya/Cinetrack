@@ -1,0 +1,170 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ContentCarousel.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.cc-root {
+  position: relative;
+}
+
+/* ── Arrow buttons ────────────────────────────────────────────────────────── */
+.cc-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+  /* Offset to sit outside the track */
+  margin-top: -24px; /* shift up to be in the poster area, not the text area */
+}
+
+.cc-arrow--left  { left:  -16px; }
+.cc-arrow--right { right: -16px; }
+
+/* Show arrows only on desktop */
+@media (min-width: 768px) {
+  .cc-root:hover .cc-arrow {
+    display: flex;
+  }
+  .cc-arrow:hover {
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+    color: var(--color-brand-text);
+    transform: translateY(-50%) scale(1.08);
+  }
+}
+
+/* ── Scroll track ─────────────────────────────────────────────────────────── */
+.cc-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.cc-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Poster card ──────────────────────────────────────────────────────────── */
+.cc-card {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.cc-poster-wrap {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--skeleton-base);
+  box-shadow: var(--card-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.cc-card:hover .cc-poster-wrap {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cc-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cc-poster-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+}
+
+/* Rating badge */
+.cc-rating-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.75);
+  color: var(--star-filled);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+/* Add / Added button */
+.cc-add-btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+  z-index: 3;
+}
+
+.cc-card:hover .cc-add-btn {
+  opacity: 1;
+}
+
+.cc-add-btn:hover {
+  background: var(--color-brand);
+  color: var(--color-brand-text);
+  transform: scale(1.1);
+}
+
+.cc-add-btn--added {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  opacity: 1 !important;
+}
+
+.cc-add-btn--added:hover {
+  background: var(--color-success);
+}
+
+/* Card text */
+.cc-card-title {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cc-card-year {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
