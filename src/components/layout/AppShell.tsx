@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { useWatchlistSync } from '@/features/watchlist/useWatchlistSync'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { PageLoadingFallback } from './PageLoadingFallback'
 
 // ── PWA Indicators ───────────────────────────────────────────────────────────
 import OfflineIndicator from '@/components/pwa/OfflineIndicator'
@@ -38,7 +40,11 @@ export function AppShell() {
       )}
 
       <main className="app-shell-main">
-        <Outlet />
+        <ErrorBoundary fallbackTitle="Application error">
+          <Suspense fallback={<PageLoadingFallback />}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       <InstallPrompt />

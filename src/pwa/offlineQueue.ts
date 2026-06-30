@@ -110,7 +110,6 @@ export async function processQueue(userId: string): Promise<void> {
 
       // Sync complete, pop from IndexedDB queue
       await removeOp(op.id)
-      console.log(`[CineTrack PWA] Replayed offline operation successfully: ${op.type}`)
     } catch (err) {
       console.error(`[CineTrack PWA] Replay failed for operation: ${op.type}`, err)
       // Break loop to keep processing order intact (replay on next connection)

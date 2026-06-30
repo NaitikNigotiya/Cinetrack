@@ -43,10 +43,7 @@ export default function InstallPrompt() {
     setIsVisible(false)
     deferredPrompt.prompt()
 
-    const choiceResult = await deferredPrompt.userChoice
-    if (choiceResult.outcome === 'accepted') {
-      console.log('[CineTrack PWA] User accepted install prompt.')
-    }
+    await deferredPrompt.userChoice
     setDeferredPrompt(null)
   }
 

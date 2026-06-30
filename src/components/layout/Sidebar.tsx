@@ -120,7 +120,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 8,
-                background: '#E50914',
+                background: 'var(--color-brand)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
                 fontSize: 20,
@@ -132,7 +132,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   fontSize: 20, fontWeight: 900, letterSpacing: '0.5px', lineHeight: 1,
                   color: 'var(--text-primary)',
                 }}>
-                  CINE<span style={{ color: '#E50914' }}>TRACK</span>
+                  CINE<span style={{ color: 'var(--color-brand)' }}>TRACK</span>
                 </div>
                 <div style={{
                   fontSize: 9, fontWeight: 600, letterSpacing: '2px',

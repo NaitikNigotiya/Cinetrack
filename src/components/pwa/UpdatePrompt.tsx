@@ -9,9 +9,7 @@ export default function UpdatePrompt() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r: ServiceWorkerRegistration | undefined) {
-      console.log('[CineTrack PWA] SW registered successfully:', r)
-    },
+    onRegistered() {},
     onRegisterError(error: unknown) {
       console.error('[CineTrack PWA] SW registration error:', error)
     },

@@ -217,8 +217,8 @@ export default function HomePage() {
     return entries.filter(e =>
       e.type === 'movie' &&
       e.status === 'completed' &&
-      e.watchDates?.some((date: string) =>
-        new Date(date).getFullYear() === currentYear
+      e.watchDates?.some((date: Timestamp) =>
+        date.toDate().getFullYear() === currentYear
       )
     ).length
   }, [entries, currentYear])

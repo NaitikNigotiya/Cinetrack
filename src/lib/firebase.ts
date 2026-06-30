@@ -40,6 +40,9 @@ export const COLLECTIONS = {
 
 export type CollectionKey = keyof typeof COLLECTIONS
 
+// NOTE: This is documentation only. The ACTUAL rules live in the
+// Firebase Console → Firestore → Rules tab. Verify they match this
+// template with your real email substituted in, not just this comment.
 /*
  * ─── FIRESTORE SECURITY RULES ─────────────────────────────────────────────────
  * Paste into Firebase Console → Firestore → Rules
