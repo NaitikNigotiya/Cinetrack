@@ -327,6 +327,7 @@ textarea {
   .main-content-area {
     padding-top: 0;
     margin-left: var(--sidebar-width);
+    width: calc(100vw - var(--sidebar-width));
   }
 }
 
@@ -373,4 +374,52 @@ textarea {
   .accordion-header {
     min-height: 56px !important;
   }
+}
+
+/* ─── SCROLL OVERFLOW LAYOUT CLASSES ─── */
+
+.page-scroll {
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 24px 16px;
+}
+@media (min-width: 1024px) {
+  .page-scroll {
+    height: 100vh;
+    padding: 24px 32px;
+  }
+}
+
+.dashboard-left-col {
+  flex: 1;
+  min-width: 0;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  box-sizing: border-box;
+}
+@media (min-width: 1024px) {
+  .dashboard-left-col {
+    height: 100vh;
+    padding: 24px 32px;
+  }
+}
+
+.calendar-container {
+  height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (min-width: 1024px) {
+  .calendar-container {
+    height: 100vh;
+  }
+}
+
+@media (max-width: 640px) {
+  .watching-page { padding: 16px !important; }
 }

@@ -216,7 +216,7 @@ export default function SearchPage() {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="sp-page">
+    <div className="sp-page page-scroll">
       <div className="sp-inner">
 
         {/* ── Sticky Search Bar ─────────────────────────────────────────────── */}

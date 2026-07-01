@@ -15,9 +15,15 @@
   flex-direction: row;
   align-items: flex-start;
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 56px);
   overflow: hidden;
   box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .hp-grid {
+    height: 100vh;
+  }
 }
 
 /* ── Left column ────────────────────────────────────────────────────────── */
@@ -43,6 +49,7 @@
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
+  height: calc(100vh - 56px);
 }
 
 @media (min-width: 1280px) {

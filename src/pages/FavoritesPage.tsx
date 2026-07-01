@@ -35,7 +35,7 @@ export default function FavoritesPage() {
 
 
   return (
-    <div className="page-wrapper favorites-page">
+    <div className="page-wrapper favorites-page page-scroll">
 
       {/* Header */}
       <div className="mobile-header-padding" style={{ display: 'flex', alignItems: 'center',

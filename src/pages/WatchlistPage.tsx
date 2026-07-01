@@ -213,7 +213,7 @@ export default function WatchlistPage() {
   const isWatchlistEmpty = entries.length === 0
 
   return (
-    <div className="page-wrapper watchlist-page">
+    <div className="page-wrapper watchlist-page page-scroll">
 
       {/* ── HEADER ── */}
       <header className="wl-header mobile-header-padding">

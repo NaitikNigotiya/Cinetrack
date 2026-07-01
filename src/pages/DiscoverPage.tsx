@@ -227,7 +227,7 @@ export default function DiscoverPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="dp-page">
+    <div className="dp-page page-scroll">
       <div className="dp-inner">
 
         {/* ── Page Header ─────────────────────────────────────────────────── */}

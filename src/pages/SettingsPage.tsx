@@ -172,7 +172,7 @@ export default function SettingsPage() {
 
   return (
     <div
-      className="page-wrapper settings-page"
+      className="page-wrapper settings-page page-scroll"
       style={{
         scrollbarWidth: 'none', msOverflowStyle: 'none',
         width: '100%',

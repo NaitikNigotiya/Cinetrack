@@ -124,11 +124,11 @@ export default function HistoryPage() {
   const totalLogsCount = historyList.length
 
   return (
-    <div className="history-page animate-fade-in">
+    <div className="page-wrapper history-page page-scroll animate-fade-in">
       {/* Header */}
-      <header className="history-header">
+      <header className="history-header mobile-header-padding">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <h1 className="history-title">Watch History</h1>
+          <h1 className="history-title page-title">Watch History</h1>
           <span className="watchlist-badge-count">{totalLogsCount} logs</span>
         </div>
       </header>

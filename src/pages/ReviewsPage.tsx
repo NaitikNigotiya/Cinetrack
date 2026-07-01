@@ -136,7 +136,7 @@ export default function ReviewsPage() {
   const isPublishDisabled = !selectedTitle || rating < 1 || reviewText.length < 20
 
   return (
-    <div className="page-wrapper reviews-page">
+    <div className="page-wrapper reviews-page page-scroll">
 
       {/* Header */}
       <div className="mobile-header-padding" style={{ display: 'flex', alignItems: 'center',

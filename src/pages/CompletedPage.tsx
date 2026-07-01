@@ -289,7 +289,7 @@ export default function CompletedPage() {
   const isCompletedEmpty = completedEntries.length === 0
 
   return (
-    <div className="page-wrapper completed-page">
+    <div className="page-wrapper completed-page page-scroll">
 
       {/* ── HEADER ── */}
       <header className="cp-header mobile-header-padding">

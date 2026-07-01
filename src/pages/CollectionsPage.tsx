@@ -347,7 +347,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="page-wrapper collections-page">
+    <div className="page-wrapper collections-page page-scroll">
 
       {/* ── DETAIL VIEW OVERLAY ── */}
       {activeCollection ? (

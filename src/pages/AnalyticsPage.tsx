@@ -378,7 +378,7 @@ export default function AnalyticsPage() {
   const isDataEmpty = filteredCompletions.length === 0
 
   return (
-    <div className="page-wrapper analytics-page">
+    <div className="page-wrapper analytics-page page-scroll">
       {/* ── HEADER ── */}
       <header className="ap-header mobile-header-padding">
         <div className="ap-header-left">

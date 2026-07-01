@@ -328,7 +328,7 @@ export default function HomePage() {
       <div className="hp-grid">
 
         {/* ── LEFT COLUMN ─────────────────────────────────────────────────── */}
-        <div className="hp-main" style={{ padding: '20px 28px' }}>
+        <div className="hp-main dashboard-left-col">
 
           {/* 1. PAGE HEADER */}
           <header className="hp-header mobile-header-padding" style={{ marginBottom: '20px', marginTop: 0 }}>

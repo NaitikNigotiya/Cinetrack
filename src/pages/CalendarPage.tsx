@@ -997,10 +997,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div style={{
-      height: '100vh', display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', boxSizing: 'border-box',
-    }}>
+    <div className="calendar-container">
 
       {/* Page header — fixed at top */}
       <div className="mobile-header-padding" style={{
