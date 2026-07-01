@@ -308,3 +308,69 @@ textarea {
     display: none;
   }
 }
+
+/* ─── MOBILE OVERHAUL SYSTEM ─── */
+
+.mobile-header {
+  display: flex;
+}
+@media (min-width: 1024px) {
+  .mobile-header {
+    display: none !important;
+  }
+}
+
+.main-content-area {
+  padding-top: 56px;
+}
+@media (min-width: 1024px) {
+  .main-content-area {
+    padding-top: 0;
+    margin-left: var(--sidebar-width);
+  }
+}
+
+@media (max-width: 1023px) {
+  .mobile-header-padding {
+    padding: 20px 16px 16px 16px !important;
+  }
+
+  .page-wrapper,
+  .sp-page,
+  .dp-page,
+  .watchlist-page,
+  .analytics-page,
+  .settings-page,
+  .favorites-page,
+  .history-page,
+  .episodes-page,
+  .detail-page {
+    height: 100% !important;
+    padding: 0 0 24px 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-title {
+    font-size: 24px !important;
+  }
+  .page-subtitle {
+    font-size: 13px !important;
+  }
+}
+
+/* Mobile touch targets HIG/Material Minimums */
+@media (max-width: 768px) {
+  .wl-status-tab-btn {
+    min-height: 40px !important;
+    padding: 10px 16px !important;
+  }
+  .sp-filter-pill, .sp-pill {
+    min-height: 36px !important;
+    display: inline-flex;
+    align-items: center;
+  }
+  .accordion-header {
+    min-height: 56px !important;
+  }
+}

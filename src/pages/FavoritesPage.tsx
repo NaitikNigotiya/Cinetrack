@@ -35,17 +35,14 @@ export default function FavoritesPage() {
 
 
   return (
-    <div style={{
-      height: '100vh', overflowY: 'auto', overflowX: 'hidden',
-      padding: '24px 32px', boxSizing: 'border-box',
-    }}>
+    <div className="page-wrapper favorites-page">
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center',
+      <div className="mobile-header-padding" style={{ display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 800,
+            <h1 className="page-title" style={{ fontSize: '28px', fontWeight: 800,
               color: 'var(--text-primary)', margin: 0 }}>Favorites</h1>
             <span style={{
               background: 'var(--color-brand)', color: 'var(--text-on-brand)',
@@ -53,7 +50,7 @@ export default function FavoritesPage() {
               borderRadius: '999px',
             }}>{favorites.length} titles</span>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
+          <p className="page-subtitle" style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
             Your most loved movies and shows
           </p>
         </div>

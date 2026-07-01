@@ -172,20 +172,18 @@ export default function SettingsPage() {
 
   return (
     <div
-      className="settings-page"
+      className="page-wrapper settings-page"
       style={{
-        height: '100vh', overflowY: 'auto', overflowX: 'hidden',
-        padding: '24px 32px 24px 32px', boxSizing: 'border-box',
         scrollbarWidth: 'none', msOverflowStyle: 'none',
         width: '100%',
       }}
     >
 
       {/* Page Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 800,
+      <div className="mobile-header-padding" style={{ marginBottom: '32px' }}>
+        <h1 className="page-title" style={{ fontSize: '28px', fontWeight: 800,
           color: 'var(--text-primary)', margin: 0 }}>Settings</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
+        <p className="page-subtitle" style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
           Manage your preferences and account
         </p>
       </div>
@@ -213,13 +211,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Row 1: Theme */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 20px',
-          borderBottom: '1px solid var(--border-default)',
-          gap: '16px',
-        }}>
+        <div className="settings-row">
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '15px', fontWeight: 600,
               color: 'var(--text-primary)' }}>Theme</div>
@@ -259,13 +251,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Row 2: Accent Color */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 20px',
-          borderBottom: '1px solid var(--border-default)',
-          gap: '16px',
-        }}>
+        <div className="settings-row">
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '15px', fontWeight: 600,
               color: 'var(--text-primary)' }}>Accent Color</div>

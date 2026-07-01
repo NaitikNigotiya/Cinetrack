@@ -211,9 +211,9 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="notes-page animate-fade-in">
-      <header className="notes-header">
-        <h1 className="reviews-title">Notes</h1>
+    <div className="page-wrapper notes-page animate-fade-in">
+      <header className="notes-header mobile-header-padding">
+        <h1 className="reviews-title page-title">Notes</h1>
         <button className="btn-new-note" onClick={() => handleCreateFromTemplate('Blank Note')}>
           <Plus size={16} />
           New Note

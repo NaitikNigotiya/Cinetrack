@@ -45,6 +45,7 @@ export default function WatchlistPage() {
   // View settings
   const [viewType, setViewType] = useState<'smart' | 'status'>('smart')
   const [activeStatusTab, setActiveStatusTab] = useState<'all' | WatchStatus>('all')
+  const [activeSmartTab, setActiveSmartTab] = useState<'watchSoon' | 'thisWeekend' | 'waitingForRelease' | 'maybeLater'>('watchSoon')
 
   // Filter Bottom Sheet states
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -215,10 +216,10 @@ export default function WatchlistPage() {
     <div className="page-wrapper watchlist-page">
 
       {/* ── HEADER ── */}
-      <header className="wl-header">
+      <header className="wl-header mobile-header-padding">
         <div className="wl-header-left">
-          <h1 className="wl-title">My Watchlist</h1>
-          <p className="wl-count-label">{entries.length} items logged</p>
+          <h1 className="wl-title page-title">My Watchlist</h1>
+          <p className="wl-count-label page-subtitle">{entries.length} items logged</p>
         </div>
         <div className="wl-header-actions">
           <button className="wl-btn-add-movie" onClick={() => navigate('/search')} type="button">
@@ -270,10 +271,32 @@ export default function WatchlistPage() {
           {/* ── SMART SECTIONS VIEW ── */}
           {viewType === 'smart' && (
             <div className="wl-smart-container">
+              {/* Horizontal Tabs for Mobile Smart View */}
+              <div className="wl-smart-tabs-row mobile-only-flex" role="tablist">
+                {[
+                  { key: 'watchSoon', label: 'Watch Soon', count: smartCategories.watchSoon.length },
+                  { key: 'thisWeekend', label: 'This Weekend', count: smartCategories.thisWeekend.length },
+                  { key: 'waitingForRelease', label: 'Waiting for Release', count: smartCategories.waitingForRelease.length },
+                  { key: 'maybeLater', label: 'Maybe Later', count: smartCategories.maybeLater.length },
+                ].map((tabItem) => (
+                  <button
+                    key={tabItem.key}
+                    className={`wl-status-tab-btn ${activeSmartTab === tabItem.key ? 'wl-status-tab-btn--active' : ''}`}
+                    onClick={() => setActiveSmartTab(tabItem.key as any)}
+                    role="tab"
+                    aria-selected={activeSmartTab === tabItem.key}
+                    type="button"
+                  >
+                    {tabItem.label}
+                    <span className="wl-status-tab-count">{tabItem.count}</span>
+                  </button>
+                ))}
+              </div>
+
               {/* Watch Soon Column */}
-              <div className="wl-smart-column">
-                <h3 className="wl-column-title">Watch Soon</h3>
-                <span className="wl-column-badge">{smartCategories.watchSoon.length}</span>
+              <div className={`wl-smart-column ${activeSmartTab === 'watchSoon' ? 'wl-smart-column--active' : 'wl-smart-column--hidden-mobile'}`}>
+                <h3 className="wl-column-title desktop-only-block">Watch Soon</h3>
+                <span className="wl-column-badge desktop-only-inline">{smartCategories.watchSoon.length}</span>
                 <div className="wl-column-cards-list">
                   {smartCategories.watchSoon.map((e) => (
                     <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />
@@ -283,9 +306,9 @@ export default function WatchlistPage() {
               </div>
 
               {/* This Weekend Column */}
-              <div className="wl-smart-column">
-                <h3 className="wl-column-title">This Weekend</h3>
-                <span className="wl-column-badge">{smartCategories.thisWeekend.length}</span>
+              <div className={`wl-smart-column ${activeSmartTab === 'thisWeekend' ? 'wl-smart-column--active' : 'wl-smart-column--hidden-mobile'}`}>
+                <h3 className="wl-column-title desktop-only-block">This Weekend</h3>
+                <span className="wl-column-badge desktop-only-inline">{smartCategories.thisWeekend.length}</span>
                 <div className="wl-column-cards-list">
                   {smartCategories.thisWeekend.map((e) => (
                     <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />
@@ -295,9 +318,9 @@ export default function WatchlistPage() {
               </div>
 
               {/* Waiting for Release Column */}
-              <div className="wl-smart-column">
-                <h3 className="wl-column-title">Waiting for Release</h3>
-                <span className="wl-column-badge">{smartCategories.waitingForRelease.length}</span>
+              <div className={`wl-smart-column ${activeSmartTab === 'waitingForRelease' ? 'wl-smart-column--active' : 'wl-smart-column--hidden-mobile'}`}>
+                <h3 className="wl-column-title desktop-only-block">Waiting for Release</h3>
+                <span className="wl-column-badge desktop-only-inline">{smartCategories.waitingForRelease.length}</span>
                 <div className="wl-column-cards-list">
                   {smartCategories.waitingForRelease.map((e) => (
                     <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />
@@ -307,9 +330,9 @@ export default function WatchlistPage() {
               </div>
 
               {/* Maybe Later Column */}
-              <div className="wl-smart-column">
-                <h3 className="wl-column-title">Maybe Later</h3>
-                <span className="wl-column-badge">{smartCategories.maybeLater.length}</span>
+              <div className={`wl-smart-column ${activeSmartTab === 'maybeLater' ? 'wl-smart-column--active' : 'wl-smart-column--hidden-mobile'}`}>
+                <h3 className="wl-column-title desktop-only-block">Maybe Later</h3>
+                <span className="wl-column-badge desktop-only-inline">{smartCategories.maybeLater.length}</span>
                 <div className="wl-column-cards-list">
                   {smartCategories.maybeLater.map((e) => (
                     <SmartCard key={e.titleId} entry={e} onNavigate={() => navigate(`/title/${e.titleId}`)} onToggleFavorite={() => handleToggleFavorite(e)} />

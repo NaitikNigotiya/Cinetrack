@@ -231,10 +231,10 @@ export default function DiscoverPage() {
       <div className="dp-inner">
 
         {/* ── Page Header ─────────────────────────────────────────────────── */}
-        <header className="dp-page-header">
+        <header className="dp-page-header mobile-header-padding">
           <div>
-            <h1 className="dp-page-title">Discover</h1>
-            <p className="dp-page-subtitle">Explore trending and top-rated titles</p>
+            <h1 className="dp-page-title page-title">Discover</h1>
+            <p className="dp-page-subtitle page-subtitle">Explore trending and top-rated titles</p>
           </div>
         </header>
 

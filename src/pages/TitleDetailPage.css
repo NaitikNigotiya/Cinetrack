@@ -870,3 +870,22 @@
   font-weight: 500;
   opacity: 0.85;
 }
+
+/* ─── MOBILE RESPONSIVENESS OVERRIDES ─── */
+@media (max-width: 767px) {
+  .detail-hero {
+    height: 200px !important;
+  }
+  .detail-poster {
+    width: 80px !important;
+    height: 120px !important;
+    min-width: 80px !important;
+  }
+  .detail-title-text {
+    font-size: 22px !important;
+  }
+  .detail-action-buttons-row {
+    padding: 0 16px !important;
+    gap: 8px !important;
+  }
+}

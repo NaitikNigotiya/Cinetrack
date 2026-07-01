@@ -292,9 +292,9 @@ export default function CompletedPage() {
     <div className="page-wrapper completed-page">
 
       {/* ── HEADER ── */}
-      <header className="cp-header">
+      <header className="cp-header mobile-header-padding">
         <div className="cp-header-left">
-          <h1 className="cp-title">Completed</h1>
+          <h1 className="cp-title page-title">Completed</h1>
           <nav className="cp-tab-bar" role="tablist">
             {(['timeline', 'calendar', 'list'] as const).map((tab) => {
               const label = tab.charAt(0).toUpperCase() + tab.slice(1)

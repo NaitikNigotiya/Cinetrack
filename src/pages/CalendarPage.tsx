@@ -1003,7 +1003,7 @@ export default function CalendarPage() {
     }}>
 
       {/* Page header — fixed at top */}
-      <div style={{
+      <div className="mobile-header-padding" style={{
         padding: '20px 24px 16px', flexShrink: 0,
         borderBottom: '1px solid var(--border-default)',
         background: 'var(--bg-primary)',
@@ -1012,25 +1012,13 @@ export default function CalendarPage() {
           
           {/* Month navigation */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button onClick={prevMonth} style={{
-              width: 32, height: 32, borderRadius: '50%',
-              border: '1px solid var(--border-default)',
-              background: 'var(--bg-elevated)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-primary)', fontSize: '16px',
-            }}>‹</button>
+            <button onClick={prevMonth} className="calendar-nav-btn" type="button">‹</button>
             <h2 style={{ fontSize: '20px', fontWeight: 800,
               color: 'var(--text-primary)', margin: 0, minWidth: '160px',
               textAlign: 'center' }}>
               {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </h2>
-            <button onClick={nextMonth} style={{
-              width: 32, height: 32, borderRadius: '50%',
-              border: '1px solid var(--border-default)',
-              background: 'var(--bg-elevated)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-primary)', fontSize: '16px',
-            }}>›</button>
+            <button onClick={nextMonth} className="calendar-nav-btn" type="button">›</button>
             <button onClick={goToToday} style={{
               padding: '6px 14px', borderRadius: 'var(--radius-md)',
               border: '1px solid var(--border-default)',

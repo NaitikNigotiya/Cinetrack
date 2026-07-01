@@ -353,7 +353,7 @@ export default function CollectionsPage() {
       {activeCollection ? (
         <div className="col-detail-pane animate-fade-in">
           {/* Header */}
-          <header className="col-detail-header">
+          <header className="col-detail-header mobile-header-padding">
             <button className="col-back-btn" onClick={() => setActiveCollectionId(null)} type="button">
               <ChevronLeft size={16} /> Back to Collections
             </button>
@@ -375,7 +375,7 @@ export default function CollectionsPage() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h2 className="col-detail-name" onClick={handleStartRename}>
+                  <h2 className="col-detail-name page-title" onClick={handleStartRename}>
                     {activeCollection.name}
                   </h2>
                   {!activeCollectionId?.startsWith('smart:') && (
@@ -386,7 +386,7 @@ export default function CollectionsPage() {
                 </div>
               )}
 
-              <p className="col-detail-desc">{activeCollection.description}</p>
+              <p className="col-detail-desc page-subtitle">{activeCollection.description}</p>
               <div className="col-detail-sub-meta">
                 <span>{activeCollectionEntries.length} titles</span>
                 {activeCollectionId?.startsWith('smart:') && (
@@ -469,10 +469,10 @@ export default function CollectionsPage() {
         /* ── CENTRAL COLLECTIONS MAIN VIEW ── */
         <div className="col-main-pane animate-fade-in">
           {/* Header */}
-          <header className="wl-header" style={{ borderBottom: 'none', padding: '0 0 24px 0' }}>
+          <header className="wl-header mobile-header-padding" style={{ borderBottom: 'none', padding: '0 0 24px 0' }}>
             <div className="wl-header-left">
-              <h1 className="wl-title">Collections</h1>
-              <p className="wl-count-label">Organize your movies into lists</p>
+              <h1 className="wl-title page-title">Collections</h1>
+              <p className="wl-count-label page-subtitle">Organize your movies into lists</p>
             </div>
             <div className="wl-header-actions">
               <button className="wl-btn-add-movie" onClick={() => setIsCreateOpen(true)} type="button">

@@ -380,10 +380,10 @@ export default function AnalyticsPage() {
   return (
     <div className="page-wrapper analytics-page">
       {/* ── HEADER ── */}
-      <header className="ap-header">
+      <header className="ap-header mobile-header-padding">
         <div className="ap-header-left">
-          <h1 className="ap-title">Analytics</h1>
-          <p className="ap-subtitle">Insights & breakdown of your watching behavior</p>
+          <h1 className="ap-title page-title">Analytics</h1>
+          <p className="ap-subtitle page-subtitle">Insights & breakdown of your watching behavior</p>
         </div>
 
         <div className="ap-header-filters">
@@ -480,7 +480,7 @@ export default function AnalyticsPage() {
             <section className="ap-chart-card">
               <h3 className="ap-chart-title">Movies vs Shows</h3>
               <div className="ap-chart-donut-wrap">
-                <ResponsiveContainer width={200} height={200}>
+                <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
                       data={moviesShowsData}
@@ -516,7 +516,7 @@ export default function AnalyticsPage() {
             <section className="ap-chart-card">
               <h3 className="ap-chart-title">Genres</h3>
               <div className="ap-chart-donut-wrap">
-                <ResponsiveContainer width={200} height={200}>
+                <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
                       data={genresData}
@@ -613,7 +613,7 @@ export default function AnalyticsPage() {
           <section className="ap-chart-card animate-fade-in" style={{ maxWidth: 600, margin: '0 auto 20px' }}>
             <h3 className="ap-chart-title" style={{ textAlign: 'center' }}>Top Platforms</h3>
             <div className="ap-chart-donut-wrap">
-              <ResponsiveContainer width={200} height={200}>
+              <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
                     data={platformsData}

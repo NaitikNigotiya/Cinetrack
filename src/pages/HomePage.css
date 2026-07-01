@@ -914,3 +914,14 @@
   font-style: normal;
   font-weight: 500;
 }
+
+@media (max-width: 1023px) {
+  .hp-main {
+    padding: 20px 16px !important;
+  }
+  .hp-greeting {
+    font-size: 22px !important;
+    white-space: nowrap !important;
+  }
+}
+

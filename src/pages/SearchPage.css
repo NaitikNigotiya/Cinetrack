@@ -653,3 +653,11 @@
   from { transform: translateX(-50%) translateY(12px); opacity: 0; }
   to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
 }
+
+@media (max-width: 640px) {
+  .sp-filter-pills {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+  }
+}
+

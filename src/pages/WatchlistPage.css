@@ -657,3 +657,60 @@
     max-height: calc(100vh - 210px);
   }
 }
+
+/* Mobile-only and desktop-only helper classes */
+.mobile-only-flex {
+  display: none !important;
+}
+.desktop-only-block {
+  display: block;
+}
+.desktop-only-inline {
+  display: inline;
+}
+
+@media (max-width: 1023px) {
+  .mobile-only-flex {
+    display: flex !important;
+  }
+  .desktop-only-block {
+    display: none !important;
+  }
+  .desktop-only-inline {
+    display: none !important;
+  }
+  
+  /* Make smart container a vertical list */
+  .wl-smart-container {
+    flex-direction: column;
+    overflow-x: visible;
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .wl-smart-column--hidden-mobile {
+    display: none !important;
+  }
+  
+  .wl-smart-column--active {
+    display: flex !important;
+    flex: 1 1 auto;
+    width: 100% !important;
+    max-height: none !important;
+  }
+  
+  .wl-smart-tabs-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 4px 8px 4px;
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: 12px;
+  }
+  
+  .wl-smart-tabs-row::-webkit-scrollbar {
+    display: none;
+  }
+}
+

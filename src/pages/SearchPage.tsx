@@ -220,7 +220,7 @@ export default function SearchPage() {
       <div className="sp-inner">
 
         {/* ── Sticky Search Bar ─────────────────────────────────────────────── */}
-        <div className="sp-sticky-header">
+        <div className="sp-sticky-header mobile-header-padding">
           <div className="sp-input-wrap">
             <span className="sp-input-icon" aria-hidden="true">
               <Search size={20} />

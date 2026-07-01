@@ -331,10 +331,10 @@ export default function HomePage() {
         <div className="hp-main" style={{ padding: '20px 28px' }}>
 
           {/* 1. PAGE HEADER */}
-          <header className="hp-header" style={{ marginBottom: '20px', marginTop: 0 }}>
+          <header className="hp-header mobile-header-padding" style={{ marginBottom: '20px', marginTop: 0 }}>
             <div className="hp-header-left">
-              <h1 className="hp-greeting">Welcome back, {firstName} 👋</h1>
-              <p className="hp-subtitle">What are we watching today?</p>
+              <h1 className="hp-greeting page-title">Welcome back, {firstName} 👋</h1>
+              <p className="hp-subtitle page-subtitle">What are we watching today?</p>
             </div>
             <div className="hp-header-right">
               <div className="hp-clock desktop-only">

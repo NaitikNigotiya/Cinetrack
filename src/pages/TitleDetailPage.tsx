@@ -802,7 +802,7 @@ export default function TitleDetailPage() {
       </section>
 
       {/* ── ACTION BUTTONS ROW ── */}
-      <div style={{
+      <div className="detail-action-buttons-row" style={{
         display: 'flex', gap: '10px', flexWrap: 'wrap',
         marginTop: '16px', marginBottom: '8px',
         padding: '0 24px',
