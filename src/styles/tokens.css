@@ -322,12 +322,15 @@ textarea {
 
 .main-content-area {
   padding-top: 56px;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 @media (min-width: 1024px) {
   .main-content-area {
     padding-top: 0;
     margin-left: var(--sidebar-width);
     width: calc(100vw - var(--sidebar-width));
+    min-height: 100vh;
   }
 }
 
@@ -379,16 +382,18 @@ textarea {
 /* ─── SCROLL OVERFLOW LAYOUT CLASSES ─── */
 
 .page-scroll {
-  height: calc(100vh - 56px);
+  min-height: calc(100vh - 56px);
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-  padding: 24px 16px;
+  padding: 20px 16px 40px;
+  scrollbar-width: none;
 }
+.page-scroll::-webkit-scrollbar { display: none; }
 @media (min-width: 1024px) {
   .page-scroll {
-    height: 100vh;
-    padding: 24px 32px;
+    min-height: 100vh;
+    padding: 24px 32px 40px;
   }
 }
 
@@ -398,13 +403,15 @@ textarea {
   height: calc(100vh - 56px);
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px;
+  padding: 16px 16px 40px;
   box-sizing: border-box;
+  scrollbar-width: none;
 }
+.dashboard-left-col::-webkit-scrollbar { display: none; }
 @media (min-width: 1024px) {
   .dashboard-left-col {
     height: 100vh;
-    padding: 24px 32px;
+    padding: 24px 32px 40px;
   }
 }
 
@@ -413,13 +420,24 @@ textarea {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 @media (min-width: 1024px) {
   .calendar-container {
     height: 100vh;
+    overflow: hidden;
   }
 }
 
 @media (max-width: 640px) {
   .watching-page { padding: 16px !important; }
+}
+
+/* Hide scrollbars globally while keeping scroll functionality */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
 }

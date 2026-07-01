@@ -4,10 +4,18 @@
 
 .detail-page {
   background: var(--bg-primary);
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
   position: relative;
   padding: 0 !important;
-  /* overrides standard page padding since we have a full bleed hero */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+@media (min-width: 1024px) {
+  .detail-page {
+    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
+  }
 }
 
 /* ── Back Button ─────────────────────────────────────────────────────────── */
@@ -42,10 +50,10 @@
   transform: scale(0.98);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1023px) {
   .detail-back-btn {
-    top: 16px;
-    left: 16px;
+    top: 12px;
+    left: 12px;
     width: 36px;
     height: 36px;
   }

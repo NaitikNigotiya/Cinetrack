@@ -9,16 +9,11 @@
 /* ── Main content area ───────────────────────────────────────────────────── */
 .app-shell-main {
   flex: 1;
-  height: 100vh;
   background: var(--bg-primary);
-  padding-top: 0;
-  padding-bottom: 0;
-  overflow: hidden;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  display: flex;
-  flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* ── Desktop: sidebar pushes content right ──────────────────────────────── */
