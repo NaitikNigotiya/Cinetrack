@@ -12,14 +12,7 @@ const API_KEY = import.meta.env.VITE_TMDB_API_KEY as string
 /** Bearer token for TMDb v4 API / Authorization-header auth */
 export const TMDB_READ_TOKEN = import.meta.env.VITE_TMDB_READ_ACCESS_TOKEN as string
 
-const IMAGE_BASES = {
-  w200: import.meta.env.VITE_TMDB_IMAGE_W200 as string,
-  w500: import.meta.env.VITE_TMDB_IMAGE_W500 as string,
-  w780: import.meta.env.VITE_TMDB_IMAGE_W780 as string,
-  original: import.meta.env.VITE_TMDB_IMAGE_ORIGINAL as string,
-} as const
-
-export type ImageSize = keyof typeof IMAGE_BASES
+export type ImageSize = 'w200' | 'w500' | 'w780' | 'original'
 
 // ─── Rate-limit aware fetch ───────────────────────────────────────────────────
 
@@ -141,11 +134,11 @@ export function getTrending(
  * Returns null when the path is null (missing poster gracefully handled).
  */
 export function getImageUrl(
-  path: string | null,
-  size: ImageSize,
+  path: string | null | undefined,
+  size: 'w200' | 'w500' | 'w780' | 'original'
 ): string | null {
   if (!path) return null
-  return `${IMAGE_BASES[size]}${path}`
+  return `https://image.tmdb.org/t/p/${size}${path}`
 }
 
 /**
