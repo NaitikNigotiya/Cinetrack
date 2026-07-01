@@ -1008,8 +1008,7 @@ export default function CalendarPage() {
         borderBottom: '1px solid var(--border-default)',
         background: 'var(--bg-primary)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between' }}>
+        <div className="calendar-header-container">
           
           {/* Month navigation */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -1142,34 +1141,23 @@ export default function CalendarPage() {
                       </div>
 
                       {/* Activity pills */}
-                      {dayWatched.slice(0, 3).map((log, i) => (
-                        <div key={`w-${i}`} style={{
-                          fontSize: '10px', fontWeight: 600,
-                          padding: '1px 5px', marginBottom: '2px',
-                          borderRadius: '3px',
-                          background: 'rgba(229,9,20,0.15)',
-                          color: '#E50914',
-                          overflow: 'hidden', textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap', lineHeight: '16px',
-                        }}>• {log.title}</div>
-                      ))}
-                      {dayPlanned.slice(0, Math.max(0, 3 - dayWatched.length)).map((plan, i) => (
-                        <div key={`p-${i}`} style={{
-                          fontSize: '10px', fontWeight: 600,
-                          padding: '1px 5px', marginBottom: '2px',
-                          borderRadius: '3px',
-                          background: 'rgba(0,180,216,0.15)',
-                          color: '#00B4D8',
-                          overflow: 'hidden', textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap', lineHeight: '16px',
-                        }}>📅 {plan.title}</div>
-                      ))}
-                      {(dayWatched.length + dayPlanned.length) > 3 && (
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)',
-                          padding: '0 4px' }}>
-                          +{dayWatched.length + dayPlanned.length - 3} more
-                        </div>
-                      )}
+                      <div className="calendar-day-cell-content">
+                        {dayWatched.slice(0, 3).map((log, i) => (
+                          <div key={`w-${i}`} className="calendar-pill calendar-pill--watched">
+                            • {log.title}
+                          </div>
+                        ))}
+                        {dayPlanned.slice(0, Math.max(0, 3 - dayWatched.length)).map((plan, i) => (
+                          <div key={`p-${i}`} className="calendar-pill calendar-pill--planned">
+                            📅 {plan.title}
+                          </div>
+                        ))}
+                        {(dayWatched.length + dayPlanned.length) > 3 && (
+                          <div className="calendar-pill-more">
+                            +{dayWatched.length + dayPlanned.length - 3} more
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )
                 })}

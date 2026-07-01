@@ -887,3 +887,85 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+/* ─── CALENDAR ACTIVITY PILLS & RESPONSIVENESS ─── */
+
+.calendar-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 767px) {
+  .calendar-header-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
+.calendar-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  margin-bottom: 2px;
+  border-radius: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 16px;
+}
+
+.calendar-pill--watched {
+  background: rgba(229, 9, 20, 0.15);
+  color: #E50914;
+}
+
+.calendar-pill--planned {
+  background: rgba(0, 180, 216, 0.15);
+  color: #00B4D8;
+}
+
+.calendar-pill-more {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+/* Mobile responsive styles: display activity pills as small circular dots instead of text labels */
+@media (max-width: 767px) {
+  .calendar-day-cell-content {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  
+  .calendar-pill {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    text-indent: -9999px;
+    overflow: hidden;
+    display: inline-block;
+  }
+  
+  .calendar-pill--watched {
+    background: #E50914;
+  }
+  
+  .calendar-pill--planned {
+    background: #00B4D8;
+  }
+  
+  .calendar-pill-more {
+    display: none;
+  }
+}
+

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  ChevronLeft,
+  ArrowLeft,
   Heart,
   Star,
   Play,
@@ -689,6 +689,14 @@ export default function TitleDetailPage() {
   if (isDetailsLoading) {
     return (
       <div className="page-wrapper detail-page">
+        <button
+          className="detail-back-btn"
+          onClick={() => navigate(-1)}
+          type="button"
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
         <div className="skeleton skeleton-backdrop" style={{ height: 300 }} />
         <div style={{ display: 'flex', gap: 20, marginTop: -60, padding: '0 24px' }}>
           <div className="skeleton" style={{ width: 120, height: 180, borderRadius: 'var(--radius-lg)' }} />
@@ -741,28 +749,14 @@ export default function TitleDetailPage() {
     <div className="page-wrapper detail-page">
 
       {/* ── BACK BUTTON ── */}
-      <div style={{ padding: '12px 24px 0' }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-secondary)',
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: 'pointer',
-            padding: '4px 0',
-            width: 'auto',
-          }}
-          type="button"
-        >
-          <ChevronLeft size={16} />
-          Back
-        </button>
-      </div>
+      <button
+        className="detail-back-btn"
+        onClick={() => navigate(-1)}
+        type="button"
+        aria-label="Go back"
+      >
+        <ArrowLeft size={20} />
+      </button>
 
       {/* ── HERO BACKDROP ── */}
       <section className="detail-hero">

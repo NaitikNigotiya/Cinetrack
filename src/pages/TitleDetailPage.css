@@ -10,6 +10,47 @@
   /* overrides standard page padding since we have a full bleed hero */
 }
 
+/* ── Back Button ─────────────────────────────────────────────────────────── */
+.detail-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 200ms ease, transform 200ms ease, border-color 200ms ease;
+  outline: none;
+}
+
+.detail-back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.detail-back-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 640px) {
+  .detail-back-btn {
+    top: 16px;
+    left: 16px;
+    width: 36px;
+    height: 36px;
+  }
+}
+
 /* ── Hero Backdrop ───────────────────────────────────────────────────────── */
 .detail-hero {
   position: relative;

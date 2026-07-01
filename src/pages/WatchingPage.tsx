@@ -16,83 +16,45 @@ export default function WatchingPage() {
   const currentEntries = activeTab === 'movies' ? movieEntries : tvEntries
 
   return (
-    <div style={{
-      height: '100vh',
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      padding: '24px 32px',
-      boxSizing: 'border-box',
-    }}>
+    <div className="page-wrapper watching-page">
       
       {/* Page Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, 
-          color: 'var(--text-primary)', margin: 0 }}>
-          Watching
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
+      <header className="wt-header">
+        <h1 className="wt-title">Watching</h1>
+        <p className="wt-card-progress-label" style={{ marginTop: '4px' }}>
           Titles currently in progress
         </p>
-      </div>
+      </header>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+      <div className="wt-tabs-row" style={{ marginBottom: '24px' }}>
         <button
           onClick={() => setActiveTab('movies')}
-          style={{
-            padding: '8px 20px',
-            borderRadius: '999px',
-            border: 'none',
-            fontWeight: 600,
-            fontSize: '14px',
-            cursor: 'pointer',
-            background: activeTab === 'movies' ? 'var(--color-brand)' : 'var(--bg-elevated)',
-            color: activeTab === 'movies' ? 'var(--text-on-brand)' : 'var(--text-secondary)',
-          }}
+          className={`wt-tab-btn ${activeTab === 'movies' ? 'wt-tab-btn--active' : ''}`}
+          type="button"
         >
-          Movies {movieEntries.length > 0 && `${movieEntries.length}`}
+          Movies {movieEntries.length > 0 && <span className="wt-tab-badge">{movieEntries.length}</span>}
         </button>
         <button
           onClick={() => setActiveTab('tv')}
-          style={{
-            padding: '8px 20px',
-            borderRadius: '999px',
-            border: 'none',
-            fontWeight: 600,
-            fontSize: '14px',
-            cursor: 'pointer',
-            background: activeTab === 'tv' ? 'var(--color-brand)' : 'var(--bg-elevated)',
-            color: activeTab === 'tv' ? 'var(--text-on-brand)' : 'var(--text-secondary)',
-          }}
+          className={`wt-tab-btn ${activeTab === 'tv' ? 'wt-tab-btn--active' : ''}`}
+          type="button"
         >
-          TV Shows {tvEntries.length > 0 && `${tvEntries.length}`}
+          TV Shows {tvEntries.length > 0 && <span className="wt-tab-badge">{tvEntries.length}</span>}
         </button>
       </div>
 
       {/* Content */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+      <div className="wt-list-container">
         {currentEntries.length === 0 ? (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', padding: '80px 24px',
-            color: 'var(--text-muted)', width: '100%',
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎬</div>
-            <h3 style={{ fontSize: '20px', fontWeight: 700, 
-              color: 'var(--text-primary)', marginBottom: '8px' }}>
-              Nothing in progress
-            </h3>
-            <p style={{ fontSize: '14px', marginBottom: '20px' }}>
-              Add something to start watching
-            </p>
+          <div className="wt-empty-state">
+            <div className="wt-empty-emoji">🎬</div>
+            <h3 className="wt-empty-title">Nothing in progress</h3>
+            <p className="wt-empty-desc">Add something to start watching</p>
             <button
               onClick={() => navigate('/search')}
-              style={{
-                padding: '10px 24px', background: 'var(--color-brand)',
-                color: 'var(--text-on-brand)', border: 'none',
-                borderRadius: 'var(--radius-md)', fontWeight: 600,
-                fontSize: '14px', cursor: 'pointer',
-              }}
+              className="wt-empty-cta"
+              type="button"
             >
               Browse
             </button>
@@ -108,40 +70,34 @@ export default function WatchingPage() {
                   navigate(`/title/${entry.titleId}`)
                 }
               }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '16px',
-                background: 'var(--card-bg)', border: '1px solid var(--card-border)',
-                borderRadius: 'var(--radius-lg)', padding: '16px',
-                width: '100%', boxSizing: 'border-box', cursor: 'pointer',
-              }}
+              className="wt-card"
             >
               {/* Poster */}
-              <img
-                src={getImageUrl(entry.posterPath, 'w200') || ''}
-                alt={entry.title}
-                style={{ width: 60, height: 90, borderRadius: 'var(--radius-md)',
-                  objectFit: 'cover', flexShrink: 0 }}
-              />
+              <div className="wt-card-poster-wrap">
+                {entry.posterPath ? (
+                  <img
+                    src={getImageUrl(entry.posterPath, 'w200') || ''}
+                    alt={entry.title}
+                    className="wt-card-poster-img"
+                  />
+                ) : (
+                  <div className="wt-card-no-poster">🎬</div>
+                )}
+              </div>
               
               {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '15px', 
-                  color: 'var(--text-primary)', marginBottom: '4px' }}>
-                  {entry.title}
-                </div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+              <div className="wt-card-middle">
+                <h3 className="wt-card-title">{entry.title}</h3>
+                <p className="wt-card-meta">
                   {entry.type === 'tv' 
                     ? (entry.totalEpisodes > 0
                       ? `${entry.episodesWatched} of ${entry.totalEpisodes} episodes`
                       : `${entry.episodesWatched} episodes watched`)
                     : `${entry.totalRuntime} min`}
-                </div>
+                </p>
                 {/* Progress bar */}
-                <div style={{ width: '100%', height: '4px', 
-                  background: 'var(--skeleton-base)', borderRadius: '999px' }}>
-                  <div style={{
-                    height: '100%', borderRadius: '999px',
-                    background: 'var(--color-brand)',
+                <div className="wt-progress-bar-bg">
+                  <div className="wt-progress-bar-fill" style={{
                     width: entry.type === 'tv'
                       ? (entry.totalEpisodes > 0
                         ? `${Math.round((entry.episodesWatched / entry.totalEpisodes) * 100)}%`
@@ -149,32 +105,30 @@ export default function WatchingPage() {
                       : '0%',
                   }} />
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  {entry.type === 'tv' && entry.totalEpisodes > 0 && (
-                    `Next: Episode ${(entry.episodesWatched || 0) + 1}`
-                  )}
-                </div>
+                {entry.type === 'tv' && entry.totalEpisodes > 0 && (
+                  <p className="wt-card-progress-label" style={{ marginTop: '4px' }}>
+                    Next: Episode {(entry.episodesWatched || 0) + 1}
+                  </p>
+                )}
               </div>
 
               {/* Continue button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (entry.type === 'tv') {
-                    navigate(`/title/${entry.titleId}/episodes`)
-                  } else {
-                    navigate(`/title/${entry.titleId}`)
-                  }
-                }}
-                style={{
-                  padding: '8px 16px', background: 'var(--color-brand)',
-                  color: 'var(--text-on-brand)', border: 'none',
-                  borderRadius: 'var(--radius-md)', fontWeight: 600,
-                  fontSize: '13px', cursor: 'pointer', flexShrink: 0,
-                }}
-              >
-                Continue
-              </button>
+              <div className="wt-card-right">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (entry.type === 'tv') {
+                      navigate(`/title/${entry.titleId}/episodes`)
+                    } else {
+                      navigate(`/title/${entry.titleId}`)
+                    }
+                  }}
+                  className="wt-continue-btn"
+                  type="button"
+                >
+                  Continue
+                </button>
+              </div>
             </div>
           ))
         )}
