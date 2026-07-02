@@ -7,7 +7,7 @@
   width: var(--sidebar-width);
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-default);
-  z-index: 100;
+  z-index: var(--z-sidebar);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -29,7 +29,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 99;
+  z-index: calc(var(--z-sidebar) - 1);
 }
 
 /* ─── Logo Section ─── */

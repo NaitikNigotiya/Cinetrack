@@ -104,7 +104,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Main Sidebar Panel */}
       <aside
-        className={`sidebar-aside ${isOpen ? 'sidebar-aside--open' : ''}`}
+        className={`sidebar-aside app-sidebar ${isOpen ? 'sidebar-aside--open' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
