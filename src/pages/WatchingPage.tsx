@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MoreVertical } from 'lucide-react'
 
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
 
@@ -10,9 +9,8 @@ export default function WatchingPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'movies' | 'tv'>('movies')
   const [sortBy, setSortBy] = useState<'newest' | 'updated' | 'title'>('newest')
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   
-  const { entries, updateEntry, removeEntry } = useWatchlist()
+  const { entries } = useWatchlist()
   
   const movieEntries = entries.filter(e => e.status === 'watching' && e.type === 'movie')
   const tvEntries = entries.filter(e => e.status === 'watching' && e.type === 'tv')

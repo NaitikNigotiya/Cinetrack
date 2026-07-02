@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Plus, X, Search, Trash2, Link as LinkIcon, Film, Check } from 'lucide-react'
+import { X, Search, Trash2, Link as LinkIcon, Film, Check } from 'lucide-react'
 import { useNotes, type NoteEntry } from '@/features/notes/hooks/useNotes'
 import { useWatchlist } from '@/features/watchlist/hooks/useWatchlist'
 import { useSearch } from '@/features/search/hooks/useSearch'
