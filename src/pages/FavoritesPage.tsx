@@ -35,34 +35,28 @@ export default function FavoritesPage() {
 
 
   return (
-    <div className="page-wrapper favorites-page page-scroll">
-
-      {/* Header */}
-      <div className="mobile-header-padding" style={{ display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', marginBottom: '24px' }}>
+    <div className="unified-page-container">
+      <header className="unified-page-header">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 className="page-title" style={{ fontSize: '28px', fontWeight: 800,
-              color: 'var(--text-primary)', margin: 0 }}>Favorites</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h1 className="page-title">Favorites</h1>
             <span style={{
               background: 'var(--color-brand)', color: 'var(--text-on-brand)',
               fontSize: '12px', fontWeight: 700, padding: '2px 10px',
               borderRadius: '999px',
             }}>{favorites.length} titles</span>
           </div>
-          <p className="page-subtitle" style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
-            Your most loved movies and shows
-          </p>
+          <p className="page-subtitle">Your most loved movies and shows</p>
         </div>
 
         {/* Sort dropdown */}
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value)}
+          className="cinetrack-select"
           style={{
-            background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-md)', padding: '8px 12px',
-            color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer',
+            width: 'auto',
+            flexShrink: 0,
           }}
         >
           <option value="date">Date Added</option>
@@ -70,7 +64,7 @@ export default function FavoritesPage() {
           <option value="title">Title A-Z</option>
           <option value="year">Year</option>
         </select>
-      </div>
+      </header>
 
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
@@ -90,31 +84,14 @@ export default function FavoritesPage() {
 
       {/* Empty state */}
       {filteredFavorites.length === 0 ? (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', padding: '80px 24px',
-        }}>
-          <div style={{ fontSize: '56px', marginBottom: '16px' }}>❤️</div>
-          <h3 style={{ fontSize: '20px', fontWeight: 700,
-            color: 'var(--text-primary)', marginBottom: '8px' }}>
-            No favorites yet
-          </h3>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)',
-            textAlign: 'center', maxWidth: '300px', marginBottom: '20px' }}>
-            Tap the ❤️ on any title or watchlist card to add it here
-          </p>
-          <button
-            onClick={() => navigate('/search')}
-            style={{
-              padding: '10px 24px', background: 'var(--color-brand)',
-              color: 'var(--text-on-brand)', border: 'none',
-              borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer',
-            }}
-          >Browse Titles</button>
+        <div className="state-display-container">
+          <div className="state-display-icon">🎬</div>
+          <h3 className="state-display-title">Nothing tracked yet</h3>
+          <p className="state-display-msg">Your added items will organize themselves nicely right here.</p>
         </div>
       ) : (
         /* Poster grid */
-        <div className="poster-grid">
+        <div className="media-card-grid">
           {filteredFavorites.map(entry => (
             <PosterCard
               key={entry.titleId}

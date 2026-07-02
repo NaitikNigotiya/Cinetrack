@@ -199,9 +199,9 @@ export default function WatchlistPage() {
 
   if (isLoading) {
     return (
-      <div className="page-wrapper watchlist-page" style={{ padding: 24 }}>
+      <div className="page-wrapper watchlist-page page-scroll">
         <div className="skeleton" style={{ height: 40, width: '40%', marginBottom: 20 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+        <div className="media-card-grid">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 'var(--radius-lg)' }} />
           ))}
@@ -213,15 +213,13 @@ export default function WatchlistPage() {
   const isWatchlistEmpty = entries.length === 0
 
   return (
-    <div className="page-wrapper watchlist-page page-scroll">
-
-      {/* ── HEADER ── */}
-      <header className="wl-header mobile-header-padding">
-        <div className="wl-header-left">
-          <h1 className="wl-title page-title">My Watchlist</h1>
-          <p className="wl-count-label page-subtitle">{entries.length} items logged</p>
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <h1 className="page-title">My Watchlist</h1>
+          <p className="page-subtitle">{entries.length} items logged</p>
         </div>
-        <div className="wl-header-actions">
+        <div className="wl-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           <button className="wl-btn-add-movie" onClick={() => navigate('/search')} type="button">
             <Plus size={16} /> Add Movie
           </button>
@@ -238,13 +236,10 @@ export default function WatchlistPage() {
 
       {/* ── EMPTY STATE ── */}
       {isWatchlistEmpty ? (
-        <div className="wl-empty-state">
-          <span className="wl-empty-emoji" role="img" aria-label="movie projector">📽️</span>
-          <h2 className="wl-empty-title">Your watchlist is empty</h2>
-          <p className="wl-empty-desc">Search for movies and TV shows to start tracking</p>
-          <button className="wl-empty-cta" onClick={() => navigate('/search')} type="button">
-            Search Now
-          </button>
+        <div className="state-display-container">
+          <div className="state-display-icon">🎬</div>
+          <h3 className="state-display-title">Nothing tracked yet</h3>
+          <p className="state-display-msg">Your added items will organize themselves nicely right here.</p>
         </div>
       ) : (
         <>
@@ -371,7 +366,7 @@ export default function WatchlistPage() {
 
               {/* Grid block */}
               {filteredAndSortedList.length > 0 ? (
-                <div className="poster-grid">
+                <div className="media-card-grid">
                   {filteredAndSortedList.map((entry) => (
                     <PosterCard
                       key={entry.titleId}

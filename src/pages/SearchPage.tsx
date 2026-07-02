@@ -82,7 +82,7 @@ function getTitle(r: TMDbSearchResult) {
 
 function SkeletonGrid() {
   return (
-    <div className="sp-results-grid" aria-label="Loading results…">
+    <div className="media-card-grid" aria-label="Loading results…">
       {Array.from({ length: 10 }).map((_, i) => (
         <div key={i} className="sp-skeleton-card">
           <div className="skeleton sp-skeleton-poster" />
@@ -214,13 +214,18 @@ export default function SearchPage() {
   const trendingItems = (trendingData?.results ?? []).filter((r) => r.media_type !== 'person').slice(0, 20)
   const hasQuery = query.trim().length >= 2
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="sp-page page-scroll">
-      <div className="sp-inner">
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <h1 className="page-title">Search</h1>
+          <p className="page-subtitle">Find movies, TV shows and more</p>
+        </div>
+      </header>
 
+      <div className="sp-inner" style={{ padding: 0, maxWidth: '100%', margin: 0 }}>
         {/* ── Sticky Search Bar ─────────────────────────────────────────────── */}
-        <div className="sp-sticky-header mobile-header-padding">
+        <div className="sp-sticky-header" style={{ padding: '12px 0' }}>
           <div className="sp-input-wrap">
             <span className="sp-input-icon" aria-hidden="true">
               <Search size={20} />
@@ -229,7 +234,7 @@ export default function SearchPage() {
             <input
               ref={inputRef}
               id="search-input"
-              className="sp-input"
+              className="sp-input cinetrack-input"
               type="search"
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
@@ -441,7 +446,7 @@ export default function SearchPage() {
 
             {/* Results grid */}
             {!isLoading && !isError && filteredResults.length > 0 && (
-              <div className="poster-grid animate-fade-in">
+              <div className="media-card-grid animate-fade-in">
                 {filteredResults.map((result) => (
                   <PosterCard
                     key={result.id}

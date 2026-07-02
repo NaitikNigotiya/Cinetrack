@@ -4,43 +4,181 @@
   align-items: center;
   justify-content: center;
   background: var(--bg-primary);
-  text-align: center;
   padding: var(--space-6);
+  overflow: hidden;
+  position: relative;
 }
+
+/* Decorative radial glow behind the 404 */
+.not-found-page::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-brand) 10%, transparent) 0%,
+    transparent 70%
+  );
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ─── Content ────────────────────────────────────────────────────────────────── */
 
 .not-found-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-4);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  max-width: 380px;
+}
+
+/* ─── Film strip icon ────────────────────────────────────────────────────────── */
+
+.not-found-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-elevated);
+  border: 2px solid var(--border-default);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  animation: nf-float 3s ease-in-out infinite;
 }
 
 .not-found-emoji {
-  font-size: 64px;
+  font-size: 48px;
   line-height: 1;
+  display: block;
 }
 
+@keyframes nf-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+/* ─── 404 Heading ────────────────────────────────────────────────────────────── */
+
 .not-found-title {
-  font-size: var(--text-3xl);
-  font-weight: 800;
+  font-size: clamp(72px, 18vw, 100px);
+  font-weight: 900;
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(
+    135deg,
+    var(--color-brand) 0%,
+    var(--color-brand-dim) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  letter-spacing: -4px;
+  margin-top: 4px;
+}
+
+/* ─── Subtitle ───────────────────────────────────────────────────────────────── */
+
+.not-found-subtitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
   color: var(--text-primary);
+  margin-top: -8px;
 }
 
 .not-found-message {
-  font-size: var(--text-md);
-  color: var(--text-secondary);
-}
-
-.not-found-link {
-  margin-top: var(--space-2);
   font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--color-brand);
-  transition: opacity var(--transition-fast);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-top: 2px;
 }
 
-.not-found-link:hover {
-  opacity: 0.8;
+/* ─── Actions ────────────────────────────────────────────────────────────────── */
+
+.not-found-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.not-found-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  background: var(--color-brand);
+  color: var(--color-brand-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+.not-found-btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--color-brand) 45%, transparent);
+}
+
+.not-found-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.not-found-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border-default);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), transform var(--transition-fast), background var(--transition-fast);
+}
+
+.not-found-btn-secondary:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-overlay);
+  transform: translateY(-2px);
+}
+
+/* ─── Decorative film dots ───────────────────────────────────────────────────── */
+
+.not-found-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: var(--space-2);
+}
+
+.not-found-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  animation: nf-pulse 1.4s ease-in-out infinite;
+}
+
+.not-found-dot:nth-child(2) { animation-delay: 0.2s; }
+.not-found-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes nf-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50%       { opacity: 1;   transform: scale(1.1); }
 }
 
 /* Shared placeholder styles for stub pages */

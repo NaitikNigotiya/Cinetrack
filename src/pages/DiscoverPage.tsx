@@ -225,18 +225,16 @@ export default function DiscoverPage() {
     handleOpenAdd(tmdbToCarousel(heroItem))
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="dp-page page-scroll">
-      <div className="dp-inner">
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <h1 className="page-title">Discover</h1>
+          <p className="page-subtitle">Explore trending and top-rated titles</p>
+        </div>
+      </header>
 
-        {/* ── Page Header ─────────────────────────────────────────────────── */}
-        <header className="dp-page-header mobile-header-padding">
-          <div>
-            <h1 className="dp-page-title page-title">Discover</h1>
-            <p className="dp-page-subtitle page-subtitle">Explore trending and top-rated titles</p>
-          </div>
-        </header>
+      <div className="dp-inner" style={{ padding: 0, maxWidth: '100%', margin: 0 }}>
 
         {/* ── TRENDING NOW ─────────────────────────────────────────────────── */}
         <section className="dp-section">

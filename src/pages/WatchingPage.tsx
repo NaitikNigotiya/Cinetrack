@@ -37,18 +37,17 @@ export default function WatchingPage() {
   }, [currentEntries, sortBy])
 
   return (
-    <div className="page-scroll watching-page">
-      
-      {/* Page Header V2 */}
-      <header className="wt-header-v2 mobile-header-padding">
+    <div className="unified-page-container">
+      <header className="unified-page-header">
         <div>
-          <h1 className="wt-title-v2 page-title">Watching</h1>
-          <p className="wt-subtitle-v2 page-subtitle">Titles currently in progress</p>
+          <h1 className="page-title">Watching</h1>
+          <p className="page-subtitle">Titles currently in progress</p>
         </div>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as any)}
           className="wt-sort-select"
+          style={{ width: 'auto', flexShrink: 0 }}
         >
           <option value="newest">Newest</option>
           <option value="updated">Recently Updated</option>
@@ -77,7 +76,7 @@ export default function WatchingPage() {
       </div>
 
       {/* Content Grid V2 */}
-      <div className="wt-list-container-v2">
+      <div className="watching-grid-layout">
         {sortedEntries.length === 0 ? (
           <div className="wt-empty-state-v2">
             <div className="wt-empty-emoji-v2">🎬</div>
@@ -92,179 +91,61 @@ export default function WatchingPage() {
           </div>
         ) : (
           sortedEntries.map(entry => {
-            const lastWatchedDate = entry.watchDates && entry.watchDates.length > 0
-              ? entry.watchDates[entry.watchDates.length - 1]?.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-              : entry.updatedAt?.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) || 'N/A'
-
-            const percentage = entry.type === 'tv' && entry.totalEpisodes > 0
-              ? Math.round((entry.episodesWatched / entry.totalEpisodes) * 100)
-              : 0
+            const progressPercent = entry.type === 'tv' && entry.totalEpisodes > 0 
+              ? Math.round((entry.episodesWatched / entry.totalEpisodes) * 100) 
+              : 0;
 
             return (
-              <div
-                key={entry.titleId}
-                className="wt-card-v2"
-                onClick={() => {
-                  if (entry.type === 'tv') {
-                    navigate(`/title/${entry.titleId}/episodes`)
-                  } else {
-                    navigate(`/title/${entry.titleId}`)
-                  }
-                }}
-              >
-                {/* 1. Poster Area */}
-                <div className="wt-poster-wrap-v2">
-                  <img
-                    src={entry.posterPath
-                      ? `https://image.tmdb.org/t/p/w342${entry.posterPath}`
-                      : 'https://via.placeholder.com/200x300?text=No+Poster'}
-                    alt={entry.title}
-                    className="wt-poster-v2"
+              <div key={entry.titleId} className="watching-card-compact">
+                {/* Poster Wrapper with Overlay Progress Bar */}
+                <div className="watching-poster-box">
+                  <img 
+                    className="watching-poster-img"
+                    src={entry.posterPath ? `https://image.tmdb.org/t/p/w400${entry.posterPath}` : 'https://via.placeholder.com/200x300?text=No+Poster'} 
+                    alt={entry.title} 
                   />
-                </div>
-
-                {/* 2. Details Area */}
-                <div className="wt-details-block-v2">
-                  <h3 className="wt-title-v2-card">{entry.title}</h3>
-                  
-                  <div className="wt-meta-v2">
-                    <span>{entry.year}</span>
-                    <span className="wt-meta-dot">•</span>
-                    <span>
-                      {entry.type === 'tv' 
-                        ? `${entry.totalEpisodes || 0} Episodes`
-                        : entry.totalRuntime 
-                          ? `${Math.floor(entry.totalRuntime / 60)}h ${entry.totalRuntime % 60}m` 
-                          : 'N/A'}
-                    </span>
-                    {entry.genres && entry.genres.length > 0 && (
-                      <>
-                        <span className="wt-meta-dot">•</span>
-                        {entry.genres.slice(0, 2).map(g => (
-                          <span key={g} className="wt-genre-tag">{g}</span>
-                        ))}
-                      </>
-                    )}
-                  </div>
-
-                  <div className="wt-last-watched">
-                    📅 Last active: {lastWatchedDate}
-                  </div>
-                </div>
-
-                {/* 3. Progress Area */}
-                <div className="wt-progress-container-v2">
-                  <div className="wt-progress-header-v2">
-                    <span>
-                      {entry.type === 'tv'
-                        ? entry.totalEpisodes > 0
-                          ? `${entry.episodesWatched} of ${entry.totalEpisodes} episodes`
-                          : `${entry.episodesWatched} episodes watched`
-                        : 'In progress'}
-                    </span>
-                    <span>{entry.type === 'tv' && entry.totalEpisodes > 0 ? `${percentage}%` : '100%'}</span>
-                  </div>
-                  <div className="wt-progress-bar-bg-v2">
-                    <div
-                      className="wt-progress-bar-fill-v2"
-                      style={{
-                        width: `${entry.type === 'tv' && entry.totalEpisodes > 0 ? percentage : 100}%`
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* 4. Actions Area */}
-                <div className="wt-actions-row-v2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (entry.type === 'tv') {
-                        navigate(`/title/${entry.titleId}/episodes`)
-                      } else {
-                        navigate(`/title/${entry.titleId}`)
-                      }
-                    }}
-                    className="wt-btn-primary-v2"
-                    type="button"
-                  >
-                    ▶ {entry.type === 'tv' ? 'Track Episodes' : 'Continue Watching'}
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigate(`/title/${entry.titleId}`)
-                    }}
-                    className="wt-btn-secondary-v2"
-                    type="button"
-                  >
-                    Details
-                  </button>
-                </div>
-
-                {/* Popover Actions Trigger */}
-                <div className="wt-menu-container">
-                  <button
-                    className="wt-menu-trigger"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setActiveMenuId(activeMenuId === entry.titleId ? null : entry.titleId)
-                    }}
-                    aria-label="Toggle actions popover menu"
-                    type="button"
-                  >
-                    <MoreVertical size={20} />
-                  </button>
-
-                  {activeMenuId === entry.titleId && (
-                    <>
-                      <div 
-                        style={{ position: 'fixed', inset: 0, zIndex: 90 }} 
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setActiveMenuId(null)
-                        }} 
-                      />
-                      <div className="wt-menu-dropdown" style={{ zIndex: 100 }} onClick={(e) => e.stopPropagation()}>
-                        <button
-                          className="wt-menu-item"
-                          onClick={() => {
-                            updateEntry(entry.titleId, { status: 'completed' })
-                            setActiveMenuId(null)
-                          }}
-                          type="button"
-                        >
-                          Mark Completed
-                        </button>
-                        <button
-                          className="wt-menu-item"
-                          onClick={() => {
-                            updateEntry(entry.titleId, { status: 'plan_to_watch' })
-                            setActiveMenuId(null)
-                          }}
-                          type="button"
-                        >
-                          Move to Watchlist
-                        </button>
-                        <button
-                          className="wt-menu-item"
-                          style={{ color: '#E50914' }}
-                          onClick={() => {
-                            removeEntry(entry.titleId)
-                            setActiveMenuId(null)
-                          }}
-                          type="button"
-                        >
-                          Remove from Watching
-                        </button>
-                      </div>
-                    </>
+                  {entry.type === 'tv' && (
+                    <div className="watching-progress-bar-fixed">
+                      <div className="watching-progress-fill" style={{ width: `${progressPercent}%` }} />
+                    </div>
                   )}
                 </div>
 
+                {/* Info Block Area */}
+                <div className="watching-info-block">
+                  <h3 className="watching-card-title">{entry.title}</h3>
+                  
+                  <div className="watching-card-meta">
+                    <span>{entry.year}</span>
+                    {entry.type === 'tv' && (
+                      <span className="watching-pill-stat">{progressPercent}% done</span>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                    {entry.type === 'tv' 
+                      ? `${entry.episodesWatched} / ${entry.totalEpisodes || 0} eps` 
+                      : 'In progress'}
+                  </div>
+
+                  {/* Action Row */}
+                  <div className="watching-action-row">
+                    <button 
+                      className="watching-btn-main"
+                      onClick={() => navigate(entry.type === 'tv' ? `/title/${entry.titleId}/episodes` : `/title/${entry.titleId}`)}
+                    >
+                      ▶ Track
+                    </button>
+                    <button 
+                      className="watching-btn-sub"
+                      onClick={() => navigate(`/title/${entry.titleId}`)}
+                    >
+                      Details
+                    </button>
+                  </div>
+                </div>
               </div>
-            )
+            );
           })
         )}
       </div>

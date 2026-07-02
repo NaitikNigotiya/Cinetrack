@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 
 import { useWatchlistEntry } from '@/features/watchlist/hooks/useWatchlistEntry'
 import { useTVProgress } from '@/features/watchlist/hooks/useTVProgress'
@@ -9,9 +9,8 @@ import { getTVDetails, getTVSeason } from '@/lib/tmdb'
 
 import type { TMDbTV } from '@/types/tmdb'
 import './TVEpisodesPage.css'
-import './TitleDetailPage.css' // Reuse SeasonChecklist progress/episode items styling
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Season Checklist ─────────────────────────────────────────────────────────
 
 function SeasonChecklist({
   tvId,
@@ -39,9 +38,10 @@ function SeasonChecklist({
   const episodes = seasonData?.episodes ?? []
   const total = episodes.length
 
+  const pad = (n: number) => String(n).padStart(2, '0')
+
   const watchedCount = useMemo(() => {
     if (!seasonData) return 0
-    const pad = (n: number) => String(n).padStart(2, '0')
     const seasonStr = pad(seasonNumber)
     return episodes.filter((ep) =>
       watchedEpisodes.has(`S${seasonStr}E${pad(ep.episode_number)}`),
@@ -50,63 +50,108 @@ function SeasonChecklist({
 
   const progressPercent = total > 0 ? Math.round((watchedCount / total) * 100) : 0
 
+  // ── Skeletons ──────────────────────────────────────────────────────────────
+
   if (isSeasonLoading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div className="skeleton" style={{ height: 24, borderRadius: 'var(--radius-sm)' }} />
-        <div className="skeleton" style={{ height: 240, borderRadius: 'var(--radius-md)' }} />
+      <>
+        <div className="episodes-progress-banner skeleton" style={{ height: 74, margin: '16px 16px 0' }} />
+        <div className="episodes-content">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton ep-card-skeleton" style={{ animationDelay: `${i * 60}ms` }} />
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  if (total === 0) {
+    return (
+      <div className="episodes-empty animate-fade-in">
+        <span className="episodes-empty-icon" aria-hidden="true">🎬</span>
+        <p className="episodes-empty-text">No episodes available for this season yet.</p>
       </div>
     )
   }
 
-  const pad = (n: number) => String(n).padStart(2, '0')
+  const seasonStr = pad(seasonNumber)
 
   return (
-    <div>
-      {/* Progress Info */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
-        <span>Progress</span>
-        <span>{watchedCount} / {total} Episodes ({progressPercent}%)</span>
-      </div>
-      <div className="season-progress-bar-bg" style={{ marginBottom: 20 }}>
-        <div className="season-progress-bar-fg" style={{ width: `${progressPercent}%` }} />
+    <>
+      {/* Progress Banner */}
+      <div className="episodes-progress-banner animate-fade-in">
+        <div className="episodes-progress-header">
+          <span className="episodes-progress-label">Season {seasonNumber} Progress</span>
+          <span className="episodes-progress-count">
+            <strong>{watchedCount}</strong> / {total} episodes
+            <span className="episodes-progress-pct">{progressPercent}%</span>
+          </span>
+        </div>
+        <div className="episodes-progress-track">
+          <div className="episodes-progress-fill" style={{ width: `${progressPercent}%` }} />
+        </div>
       </div>
 
-      {/* Episode Checklist */}
-      <div className="episode-list" role="group" aria-label={`Season ${seasonNumber} Checklist`}>
-        {episodes.map((ep) => {
-          const episodeCode = `S${pad(seasonNumber)}E${pad(ep.episode_number)}`
-          const isChecked = watchedEpisodes.has(episodeCode)
+      {/* Episode Cards */}
+      <div className="episodes-content" role="group" aria-label={`Season ${seasonNumber} episodes`}>
+        {episodes.map((ep, idx) => {
+          const episodeCode = `S${seasonStr}E${pad(ep.episode_number)}`
+          const isWatched = watchedEpisodes.has(episodeCode)
+          const runtime = ep.runtime ?? averageEpisodeRuntime
 
           return (
             <div
               key={ep.id}
-              className="episode-item animate-fade-in"
-              onClick={() => toggleEpisode(seasonNumber, ep.episode_number, ep.runtime ?? averageEpisodeRuntime)}
+              className={`ep-card animate-fade-in${isWatched ? ' ep-card--watched' : ''}`}
+              style={{ animationDelay: `${idx * 30}ms` }}
+              onClick={() => toggleEpisode(seasonNumber, ep.episode_number, runtime)}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isWatched}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  toggleEpisode(seasonNumber, ep.episode_number, runtime)
+                }
+              }}
             >
-              <div className="episode-checkbox-wrapper">
+              <div className="ep-checkbox-wrap">
                 <input
                   type="checkbox"
-                  checked={isChecked}
-                  onChange={() => {}} // Driven by card parent container click
-                  className="episode-checkbox"
-                  aria-label={`Mark Episode ${ep.episode_number}: ${ep.name} as watched`}
+                  className="ep-checkbox"
+                  checked={isWatched}
+                  onChange={() => {}}
+                  tabIndex={-1}
+                  aria-label={`Mark ${episodeCode} as watched`}
                 />
               </div>
-              <div className="episode-info">
-                <div className="episode-title-row">
-                  <span className="episode-code">{episodeCode}</span>
-                  <span className="episode-name">{ep.name || `Episode ${ep.episode_number}`}</span>
+
+              <div className="ep-info">
+                <div className="ep-title-row">
+                  <span className="ep-code">{episodeCode}</span>
+                  <span className="ep-name">{ep.name || `Episode ${ep.episode_number}`}</span>
                 </div>
-                {ep.air_date && (
-                  <p className="episode-air-date">Air date: {new Date(ep.air_date).toLocaleDateString()}</p>
-                )}
+                <div className="ep-meta">
+                  {ep.air_date && (
+                    <span className="ep-air-date">
+                      {new Date(ep.air_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                  {runtime > 0 && (
+                    <span className="ep-runtime">{runtime}m</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="ep-watched-badge" aria-hidden="true">
+                <CheckCircle2 size={14} />
+                Watched
               </div>
             </div>
           )
         })}
       </div>
-    </div>
+    </>
   )
 }
 
@@ -119,7 +164,6 @@ export default function TVEpisodesPage() {
   const [type, tmdbIdStr] = id?.split(':') ?? []
   const tmdbId = parseInt(tmdbIdStr || '', 10)
 
-  // Load parent TV details
   const { data: details, isLoading: isDetailsLoading } = useQuery<TMDbTV, Error>({
     queryKey: ['title-details', 'tv', tmdbId] as const,
     queryFn: () => getTVDetails(tmdbId),
@@ -127,7 +171,6 @@ export default function TVEpisodesPage() {
     staleTime: 15 * 60 * 1000,
   })
 
-  // Load watchlist entry
   const { entry } = useWatchlistEntry(id || '')
 
   const [selectedSeason, setSelectedSeason] = useState(entry?.currentSeason || 1)
@@ -136,18 +179,28 @@ export default function TVEpisodesPage() {
     ? details.seasons.filter((s) => s.season_number > 0)
     : []
 
+  // ── Loading skeleton ───────────────────────────────────────────────────────
+
   if (isDetailsLoading) {
     return (
       <div className="episodes-page">
         <header className="episodes-header">
-          <div className="skeleton" style={{ width: 24, height: 24, borderRadius: '50%' }} />
+          <div className="skeleton" style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
           <div className="episodes-header-title-box">
-            <div className="skeleton" style={{ height: 12, width: '40%', borderRadius: 4 }} />
-            <div className="skeleton" style={{ height: 18, width: '60%', borderRadius: 4, marginTop: 4 }} />
+            <div className="skeleton" style={{ height: 10, width: '35%', borderRadius: 4 }} />
+            <div className="skeleton" style={{ height: 17, width: '55%', borderRadius: 4, marginTop: 6 }} />
           </div>
         </header>
+        <div className="seasons-scroll-row">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton" style={{ width: 80, height: 34, borderRadius: 'var(--radius-pill)', flexShrink: 0 }} />
+          ))}
+        </div>
+        <div className="episodes-progress-banner skeleton" style={{ height: 74, margin: '16px 16px 0' }} />
         <div className="episodes-content">
-          <div className="skeleton" style={{ height: 120, borderRadius: 'var(--radius-lg)' }} />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="skeleton ep-card-skeleton" style={{ animationDelay: `${i * 60}ms` }} />
+          ))}
         </div>
       </div>
     )
@@ -157,10 +210,15 @@ export default function TVEpisodesPage() {
 
   return (
     <div className="episodes-page">
-      {/* Header */}
+      {/* Sticky Header */}
       <header className="episodes-header">
-        <button className="episodes-back-btn" onClick={() => navigate(-1)} aria-label="Go back" type="button">
-          <ArrowLeft size={20} />
+        <button
+          className="episodes-back-btn"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          type="button"
+        >
+          <ArrowLeft size={18} />
         </button>
         <div className="episodes-header-title-box">
           <p className="episodes-header-show-title">{showTitle}</p>
@@ -168,7 +226,7 @@ export default function TVEpisodesPage() {
         </div>
       </header>
 
-      {/* Season Selection Row */}
+      {/* Season Selection */}
       {seasons.length > 0 && (
         <div className="seasons-scroll-row" role="tablist" aria-label="Seasons">
           {seasons.map((s) => {
@@ -190,18 +248,16 @@ export default function TVEpisodesPage() {
       )}
 
       {/* Episode Checklist */}
-      <main className="episodes-content">
-        <SeasonChecklist
-          tvId={tmdbId}
-          seasonNumber={selectedSeason}
-          tvTitle={showTitle}
-          averageEpisodeRuntime={
-            details?.episode_run_time?.[0]
-              ? details.episode_run_time[0]
-              : 30
-          }
-        />
-      </main>
+      <SeasonChecklist
+        tvId={tmdbId}
+        seasonNumber={selectedSeason}
+        tvTitle={showTitle}
+        averageEpisodeRuntime={
+          details?.episode_run_time?.[0]
+            ? details.episode_run_time[0]
+            : 30
+        }
+      />
     </div>
   )
 }

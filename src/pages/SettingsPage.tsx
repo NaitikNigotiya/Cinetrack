@@ -171,22 +171,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <div
-      className="page-wrapper settings-page page-scroll"
-      style={{
-        scrollbarWidth: 'none', msOverflowStyle: 'none',
-        width: '100%',
-      }}
-    >
-
-      {/* Page Header */}
-      <div className="mobile-header-padding" style={{ marginBottom: '32px' }}>
-        <h1 className="page-title" style={{ fontSize: '28px', fontWeight: 800,
-          color: 'var(--text-primary)', margin: 0 }}>Settings</h1>
-        <p className="page-subtitle" style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
-          Manage your preferences and account
-        </p>
-      </div>
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <h1 className="page-title">Settings</h1>
+          <p className="page-subtitle">Manage your preferences and account</p>
+        </div>
+      </header>
 
       {/* ─── APPEARANCE SECTION ─── */}
       <div style={{
@@ -441,10 +432,9 @@ export default function SettingsPage() {
           <select
             value={defaultStatus}
             onChange={(e) => handleDefaultStatusChange(e.target.value)}
+            className="cinetrack-select"
             style={{
-              background: 'var(--input-bg)', border: '1px solid var(--input-border)',
-              borderRadius: 'var(--radius-md)', padding: '8px 12px',
-              color: 'var(--text-primary)', fontSize: '14px', cursor: 'pointer',
+              width: 'auto',
             }}
           >
             <option value="plan_to_watch">Plan to Watch</option>

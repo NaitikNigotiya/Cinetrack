@@ -364,7 +364,81 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="page-wrapper analytics-page" style={{ padding: 24 }}>
+      <div className="unified-page-container">
+        {/* Fixed non-overlapping clean layout header block */}
+        <header className="unified-page-header">
+          <div>
+            <h1 className="page-title">Analytics</h1>
+            <p className="page-subtitle">Insights & breakdown of your watching behavior</p>
+          </div>
+
+          {/* Actions are completely isolated into a responsive group box */}
+          <div className="analytics-header-actions">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="cinetrack-select"
+              style={{ width: 'auto', minWidth: '110px' }}
+            >
+              <option value="All Time">All Time</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+            </select>
+
+            <div style={{ display: 'inline-flex', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '4px', border: '1px solid var(--border-default)' }}>
+              <button
+                className={`pill-btn ${contentType === 'all' ? 'active' : ''}`}
+                onClick={() => setContentType('all')}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  background: contentType === 'all' ? 'var(--color-brand)' : 'transparent',
+                  borderRadius: 'var(--radius-sm)',
+                  color: contentType === 'all' ? 'white' : 'var(--text-muted)',
+                  fontWeight: contentType === 'all' ? 600 : 400,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                All
+              </button>
+              <button
+                className={`pill-btn ${contentType === 'movie' ? 'active' : ''}`}
+                onClick={() => setContentType('movie')}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  background: contentType === 'movie' ? 'var(--color-brand)' : 'transparent',
+                  borderRadius: 'var(--radius-sm)',
+                  color: contentType === 'movie' ? 'white' : 'var(--text-muted)',
+                  fontWeight: contentType === 'movie' ? 600 : 400,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                Movies
+              </button>
+              <button
+                className={`pill-btn ${contentType === 'tv' ? 'active' : ''}`}
+                onClick={() => setContentType('tv')}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  background: contentType === 'tv' ? 'var(--color-brand)' : 'transparent',
+                  borderRadius: 'var(--radius-sm)',
+                  color: contentType === 'tv' ? 'white' : 'var(--text-muted)',
+                  fontWeight: contentType === 'tv' ? 600 : 400,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                TV Shows
+              </button>
+            </div>
+          </div>
+        </header>
+
         <div className="skeleton" style={{ height: 40, width: '30%', marginBottom: 24 }} />
         <div className="ap-stats-row-grid">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -378,49 +452,72 @@ export default function AnalyticsPage() {
   const isDataEmpty = filteredCompletions.length === 0
 
   return (
-    <div className="page-wrapper analytics-page page-scroll">
-      {/* ── HEADER ── */}
-      <header className="ap-header mobile-header-padding">
-        <div className="ap-header-left">
-          <h1 className="ap-title page-title">Analytics</h1>
-          <p className="ap-subtitle page-subtitle">Insights & breakdown of your watching behavior</p>
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <h1 className="page-title">Analytics</h1>
+          <p className="page-subtitle">Insights & breakdown of your watching behavior</p>
         </div>
 
-        <div className="ap-header-filters">
-          {/* Year selector */}
-          <div className="ap-filter-select-wrap">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="ap-filter-select"
-            >
-              <option value="All Time">All Time</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-            </select>
-          </div>
+        <div className="analytics-header-actions">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="cinetrack-select"
+            style={{ width: 'auto', minWidth: '110px' }}
+          >
+            <option value="All Time">All Time</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+          </select>
 
-          {/* Type Toggle pills */}
-          <div className="ap-toggle-pills" role="tablist">
+          <div style={{ display: 'inline-flex', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '4px', border: '1px solid var(--border-default)' }}>
             <button
-              className={`ap-toggle-pill ${contentType === 'all' ? 'ap-toggle-pill--active' : ''}`}
+              className={`pill-btn ${contentType === 'all' ? 'active' : ''}`}
               onClick={() => setContentType('all')}
-              type="button"
+              style={{
+                padding: '6px 12px',
+                border: 'none',
+                background: contentType === 'all' ? 'var(--color-brand)' : 'transparent',
+                borderRadius: 'var(--radius-sm)',
+                color: contentType === 'all' ? 'white' : 'var(--text-muted)',
+                fontWeight: contentType === 'all' ? 600 : 400,
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
             >
               All
             </button>
             <button
-              className={`ap-toggle-pill ${contentType === 'movie' ? 'ap-toggle-pill--active' : ''}`}
+              className={`pill-btn ${contentType === 'movie' ? 'active' : ''}`}
               onClick={() => setContentType('movie')}
-              type="button"
+              style={{
+                padding: '6px 12px',
+                border: 'none',
+                background: contentType === 'movie' ? 'var(--color-brand)' : 'transparent',
+                borderRadius: 'var(--radius-sm)',
+                color: contentType === 'movie' ? 'white' : 'var(--text-muted)',
+                fontWeight: contentType === 'movie' ? 600 : 400,
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
             >
               Movies
             </button>
             <button
-              className={`ap-toggle-pill ${contentType === 'tv' ? 'ap-toggle-pill--active' : ''}`}
+              className={`pill-btn ${contentType === 'tv' ? 'active' : ''}`}
               onClick={() => setContentType('tv')}
-              type="button"
+              style={{
+                padding: '6px 12px',
+                border: 'none',
+                background: contentType === 'tv' ? 'var(--color-brand)' : 'transparent',
+                borderRadius: 'var(--radius-sm)',
+                color: contentType === 'tv' ? 'white' : 'var(--text-muted)',
+                fontWeight: contentType === 'tv' ? 600 : 400,
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
             >
               TV Shows
             </button>
@@ -440,8 +537,8 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <>
-          {/* ── TOP STATS ROW (6 cards) ── */}
-          <section className="ap-stats-row-grid animate-fade-in">
+          {/* 1. Unified Metrics Stat Row - 6 Cards */}
+          <div className="analytics-metrics-grid animate-fade-in">
             <div className="ap-stat-card">
               <span className="ap-stat-icon"><Film size={16} /></span>
               <span className="ap-stat-value"><AnimatedNumber value={metrics.moviesCount} /></span>
@@ -472,15 +569,14 @@ export default function AnalyticsPage() {
               <span className="ap-stat-value"><AnimatedNumber value={metrics.rewatchedCount} /></span>
               <span className="ap-stat-lbl">Rewatched</span>
             </div>
-          </section>
+          </div>
 
-          {/* ── ROW 1: TWO DONUTS SIDE BY SIDE ── */}
-          <div className="ap-charts-row-split animate-fade-in">
-            {/* Movies vs Shows Donut */}
-            <section className="ap-chart-card">
-              <h3 className="ap-chart-title">Movies vs Shows</h3>
-              <div className="ap-chart-donut-wrap">
-                <ResponsiveContainer width="100%" height={200}>
+          {/* 2. Responsive Twin Donut Chart Layout Area */}
+          <div className="analytics-charts-split animate-fade-in">
+            <div className="analytics-chart-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Movies vs Shows</h3>
+              <div style={{ width: '100%', height: '260px', position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={moviesShowsData}
@@ -510,13 +606,12 @@ export default function AnalyticsPage() {
                   </span>
                 ))}
               </div>
-            </section>
+            </div>
 
-            {/* Genres Donut */}
-            <section className="ap-chart-card">
-              <h3 className="ap-chart-title">Genres</h3>
-              <div className="ap-chart-donut-wrap">
-                <ResponsiveContainer width="100%" height={200}>
+            <div className="analytics-chart-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Genres</h3>
+              <div style={{ width: '100%', height: '260px', position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={genresData}
@@ -549,12 +644,12 @@ export default function AnalyticsPage() {
                   </span>
                 ))}
               </div>
-            </section>
+            </div>
           </div>
 
-          {/* ── ROW 2: MONTHLY WATCH TIME (FULL WIDTH) ── */}
-          <section className="ap-chart-card animate-fade-in">
-            <h3 className="ap-chart-title">Monthly Watch Time ({selectedYear})</h3>
+          {/* 3. Monthly Watch Time Chart Block */}
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '20px', width: '100%', boxSizing: 'border-box', marginBottom: 24 }} className="animate-fade-in">
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Monthly Watch Time ({selectedYear})</h3>
             <div style={{ width: '100%', height: 240 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -567,13 +662,12 @@ export default function AnalyticsPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </section>
+          </div>
 
-          {/* ── ROW 3: RATINGS & RUNTIMES SIDE BY SIDE ── */}
-          <div className="ap-charts-row-split animate-fade-in">
-            {/* Ratings distribution */}
-            <section className="ap-chart-card" style={{ height: 350 }}>
-              <h3 className="ap-chart-title">Ratings Distribution</h3>
+          {/* 4. Ratings & Runtime distribution */}
+          <div className="analytics-charts-split animate-fade-in">
+            <div className="analytics-chart-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '20px', height: 350 }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Ratings Distribution</h3>
               <div style={{ width: '100%', height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart layout="vertical" data={ratingsDistributionData} margin={{ top: 0, right: 20, left: -25, bottom: 0 }}>
@@ -591,11 +685,10 @@ export default function AnalyticsPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </section>
+            </div>
 
-            {/* Runtime distribution */}
-            <section className="ap-chart-card" style={{ height: 350 }}>
-              <h3 className="ap-chart-title">Runtime Distribution</h3>
+            <div className="analytics-chart-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '20px', height: 350 }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Runtime Distribution</h3>
               <div style={{ width: '100%', height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={runtimeDistributionData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
@@ -606,12 +699,12 @@ export default function AnalyticsPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </section>
+            </div>
           </div>
 
-          {/* ── ROW 4: TOP PLATFORMS DONUT ── */}
-          <section className="ap-chart-card animate-fade-in" style={{ maxWidth: 600, margin: '0 auto 20px' }}>
-            <h3 className="ap-chart-title" style={{ textAlign: 'center' }}>Top Platforms</h3>
+          {/* 5. Top Platforms Donut */}
+          <div className="analytics-chart-card animate-fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '20px', maxWidth: 600, margin: '0 auto 20px' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>Top Platforms</h3>
             <div className="ap-chart-donut-wrap">
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -645,7 +738,7 @@ export default function AnalyticsPage() {
                 </span>
               ))}
             </div>
-          </section>
+          </div>
         </>
       )}
     </div>

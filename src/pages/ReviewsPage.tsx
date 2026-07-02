@@ -136,31 +136,20 @@ export default function ReviewsPage() {
   const isPublishDisabled = !selectedTitle || rating < 1 || reviewText.length < 20
 
   return (
-    <div className="page-wrapper reviews-page page-scroll">
-
-      {/* Header */}
-      <div className="mobile-header-padding" style={{ display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', marginBottom: '24px' }}>
+    <div className="unified-page-container">
+      <header className="unified-page-header">
         <div>
-          <h1 className="page-title" style={{ fontSize: '28px', fontWeight: 800,
-            color: 'var(--text-primary)', margin: 0 }}>Reviews</h1>
-          <p className="page-subtitle" style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
-            Your personal movie reviews
-          </p>
+          <h1 className="page-title">Reviews</h1>
+          <p className="page-subtitle">Your personal movie reviews</p>
         </div>
         <button
           onClick={handleOpenCreate}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 20px', background: 'var(--color-brand)',
-            color: 'var(--text-on-brand)', border: 'none',
-            borderRadius: 'var(--radius-md)', fontWeight: 600,
-            fontSize: '14px', cursor: 'pointer',
-          }}
+          className="page-header-btn"
+          type="button"
         >
           + Write Review
         </button>
-      </div>
+      </header>
 
       {/* Loading */}
       {isLoading ? (
@@ -170,49 +159,24 @@ export default function ReviewsPage() {
           ))}
         </div>
       ) : reviews.length === 0 ? (
-        /* Empty state */
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', padding: '80px 24px', width: '100%',
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⭐</div>
-          <h3 style={{ fontSize: '20px', fontWeight: 700,
-            color: 'var(--text-primary)', marginBottom: '8px' }}>
-            No reviews yet
-          </h3>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-            Share your thoughts on movies you've watched
-          </p>
-          <button
-            onClick={handleOpenCreate}
-            style={{
-              padding: '10px 24px', background: 'var(--color-brand)',
-              color: 'var(--text-on-brand)', border: 'none',
-              borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            Write First Review
-          </button>
+        <div className="state-display-container">
+          <div className="state-display-icon">🎬</div>
+          <h3 className="state-display-title">Nothing tracked yet</h3>
+          <p className="state-display-msg">Your added items will organize themselves nicely right here.</p>
         </div>
       ) : (
         <>
           {/* Sort bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          <div className="sort-filters-row">
+            <span className="sort-label">
               Sort by:
             </span>
             {(['newest', 'highest', 'alphabetical'] as const).map((opt) => (
               <button
                 key={opt}
                 onClick={() => setSortBy(opt)}
-                style={{
-                  padding: '4px 12px', fontSize: 12, fontWeight: 600,
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-default)',
-                  background: sortBy === opt ? 'var(--text-primary)' : 'var(--bg-secondary)',
-                  color: sortBy === opt ? 'var(--bg-secondary)' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                }}
+                className={`sort-btn ${sortBy === opt ? 'sort-btn--active' : ''}`}
+                type="button"
               >
                 {opt === 'newest' ? 'Newest' : opt === 'highest' ? 'Highest Rated' : 'Title A-Z'}
               </button>
@@ -220,66 +184,57 @@ export default function ReviewsPage() {
           </div>
 
           {/* Reviews list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="reviews-list">
             {sortedReviews.map(review => (
-              <div key={review.id} style={{
-                background: 'var(--card-bg)', border: '1px solid var(--card-border)',
-                borderRadius: 'var(--radius-lg)', padding: '20px',
-                width: '100%', boxSizing: 'border-box',
-              }}>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div key={review.id} className="review-card animate-fade-in">
+                <div className="review-card-top">
                   {review.posterPath ? (
                     <img
                       src={getImageUrl(review.posterPath, 'w200') || ''}
                       alt={review.title}
-                      style={{ width: 60, height: 90, borderRadius: 'var(--radius-md)',
-                        objectFit: 'cover', flexShrink: 0 }}
+                      className="review-poster"
                     />
                   ) : (
-                    <div style={{ width: 60, height: 90, borderRadius: 'var(--radius-md)',
-                      background: 'var(--bg-overlay)', flexShrink: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="review-poster" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Film size={20} color="var(--text-muted)" />
                     </div>
                   )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between',
-                      alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div className="review-card-info">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>
+                        <h3 className="review-title-text" style={{ margin: 0 }}>
                           {review.title}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                        </h3>
+                        <div className="review-year" style={{ marginTop: '2px' }}>
                           {review.year > 0 ? review.year : '—'} · {'⭐'.repeat(Math.round(review.rating / 2))} {review.rating}/10
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      <div className="review-actions" style={{ flexShrink: 0 }}>
                         <button
                           onClick={() => handleOpenEdit(review)}
-                          style={{ background: 'none', border: 'none',
-                            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }}>
+                          className="btn-review-action"
+                          type="button"
+                          aria-label="Edit review"
+                        >
                           ✏️
                         </button>
                         <button
                           onClick={() => handleDelete(review.id, review.title)}
-                          style={{ background: 'none', border: 'none',
-                            color: 'var(--color-error)', cursor: 'pointer', fontSize: 16 }}>
+                          className="btn-review-action btn-review-action--delete"
+                          type="button"
+                          aria-label="Delete review"
+                        >
                           🗑️
                         </button>
                       </div>
                     </div>
-                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)',
-                      lineHeight: 1.6, margin: '0 0 12px' }}>
+                    <p className="review-body-text" style={{ margin: '12px 0' }}>
                       {review.reviewText}
                     </p>
                     {review.tags && review.tags.length > 0 && (
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <div className="review-tags-row">
                         {review.tags.map((tag, i) => (
-                          <span key={i} style={{
-                            fontSize: '12px', color: 'var(--text-muted)',
-                            background: 'var(--bg-elevated)',
-                            padding: '2px 8px', borderRadius: '999px',
-                          }}>
+                          <span key={i} className="tag-chip">
                             {tag.startsWith('#') ? tag : `#${tag}`}
                           </span>
                         ))}
@@ -295,10 +250,10 @@ export default function ReviewsPage() {
 
       {/* Write / Edit Review Modal */}
       {isModalOpen && (
-        <div className="review-modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="review-modal" onClick={(e) => e.stopPropagation()}>
-            <header className="review-modal-header">
-              <h2 className="review-modal-title">
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content-box" onClick={(e) => e.stopPropagation()}>
+            <header className="review-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-default)' }}>
+              <h2 className="review-modal-title" style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>
                 {editingReview ? 'Edit Review' : 'Write a Review'}
               </h2>
               <button className="btn-close-modal" onClick={() => setIsModalOpen(false)}>
@@ -315,7 +270,7 @@ export default function ReviewsPage() {
                     <Search size={16} style={{ position: 'absolute', left: 10, top: 10, color: 'var(--text-muted)' }} />
                     <input
                       type="text"
-                      className="modal-search-input"
+                      className="modal-search-input cinetrack-input"
                       placeholder="Search movie or TV show title..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -422,7 +377,7 @@ export default function ReviewsPage() {
                   </span>
                 </div>
                 <textarea
-                  className="review-textarea"
+                  className="review-textarea cinetrack-input"
                   placeholder="What did you think? Share your detailed review..."
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
@@ -435,7 +390,7 @@ export default function ReviewsPage() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
-                    className="modal-search-input"
+                    className="modal-search-input cinetrack-input"
                     placeholder="e.g. Thriller, Emotional, MindBending"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}

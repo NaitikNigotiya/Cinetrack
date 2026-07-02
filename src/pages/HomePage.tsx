@@ -423,9 +423,21 @@ export default function HomePage() {
           {/* 3. QUICK STATS STRIP */}
           <div style={{ marginBottom: '24px' }}>
             <section className="hp-stats-section" style={{ marginTop: 0, marginBottom: '20px' }}>
-              <div className="hp-stats-grid" style={{ gap: '10px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: window.innerWidth < 640 ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+                gap: '12px',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
                 {quickStats.map((s) => (
-                  <div key={s.id} className="hp-stat-card">
+                  <div
+                    key={s.id}
+                    className="hp-stat-card"
+                    style={{
+                      gridColumn: s.id === 'rating' && window.innerWidth < 640 ? 'span 2' : 'span 1'
+                    }}
+                  >
                     <div className="hp-stat-icon">{s.icon}</div>
                     <div className="hp-stat-number">{s.val}</div>
                     <div className="hp-stat-label">{s.label}</div>

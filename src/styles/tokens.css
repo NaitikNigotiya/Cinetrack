@@ -93,6 +93,13 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
   --sidebar-width: 240px;
+
+  /* Z-index layers */
+  --z-header: 200;
+  --z-sidebar: 300;
+  --z-modal-backdrop: 400;
+  --z-modal-content: 500;
+  --z-toast: 600;
 }
 
 /* ─── DARK THEME (Netflix-inspired) ─── */
@@ -279,31 +286,46 @@ textarea {
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
 }
+
 @media (min-width: 480px) {
-  .poster-grid { grid-template-columns: repeat(3, 1fr); }
+  .poster-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
+
 @media (min-width: 768px) {
-  .poster-grid { grid-template-columns: repeat(4, 1fr); }
+  .poster-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
+
 @media (min-width: 1024px) {
-  .poster-grid { grid-template-columns: repeat(5, 1fr); }
+  .poster-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
+
 @media (min-width: 1280px) {
-  .poster-grid { grid-template-columns: repeat(6, 1fr); }
+  .poster-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 
 .calendar-side-panel {
   display: none !important;
 }
+
 .calendar-bottom-sheet {
   display: block;
   border-top: 1px solid var(--border-default);
   background: var(--bg-secondary);
 }
+
 @media (min-width: 1024px) {
   .calendar-side-panel {
     display: block !important;
   }
+
   .calendar-bottom-sheet {
     display: none;
   }
@@ -314,10 +336,50 @@ textarea {
 .mobile-header {
   display: flex;
 }
+
 @media (min-width: 1024px) {
   .mobile-header {
     display: none !important;
   }
+}
+
+/* ─── STANDARDISED PAGE HEADER PADDING ─── */
+.mobile-header-padding {
+  padding: 24px 24px 16px 24px;
+}
+
+@media (max-width: 1023px) {
+  .mobile-header-padding {
+    padding: 20px 16px 16px 16px !important;
+  }
+}
+
+/* ─── UNIVERSAL PAGE HEADER BUTTON ─── */
+.page-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: var(--color-brand);
+  color: var(--text-on-brand);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-family);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.page-header-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.page-header-btn:active {
+  transform: translateY(0);
 }
 
 .main-content-area {
@@ -325,6 +387,7 @@ textarea {
   min-height: 100vh;
   box-sizing: border-box;
 }
+
 @media (min-width: 1024px) {
   .main-content-area {
     padding-top: 0;
@@ -354,10 +417,27 @@ textarea {
   }
 }
 
+.page-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+}
+
+.page-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 4px 0 0 0;
+  font-weight: 400;
+}
+
 @media (max-width: 640px) {
   .page-title {
     font-size: 24px !important;
   }
+
   .page-subtitle {
     font-size: 13px !important;
   }
@@ -369,11 +449,14 @@ textarea {
     min-height: 40px !important;
     padding: 10px 16px !important;
   }
-  .sp-filter-pill, .sp-pill {
+
+  .sp-filter-pill,
+  .sp-pill {
     min-height: 36px !important;
     display: inline-flex;
     align-items: center;
   }
+
   .accordion-header {
     min-height: 56px !important;
   }
@@ -389,7 +472,11 @@ textarea {
   padding: 20px 16px 40px;
   scrollbar-width: none;
 }
-.page-scroll::-webkit-scrollbar { display: none; }
+
+.page-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 @media (min-width: 1024px) {
   .page-scroll {
     min-height: 100vh;
@@ -407,7 +494,11 @@ textarea {
   box-sizing: border-box;
   scrollbar-width: none;
 }
-.dashboard-left-col::-webkit-scrollbar { display: none; }
+
+.dashboard-left-col::-webkit-scrollbar {
+  display: none;
+}
+
 @media (min-width: 1024px) {
   .dashboard-left-col {
     height: 100vh;
@@ -422,6 +513,7 @@ textarea {
   overflow: hidden;
   box-sizing: border-box;
 }
+
 @media (min-width: 1024px) {
   .calendar-container {
     height: 100vh;
@@ -430,7 +522,9 @@ textarea {
 }
 
 @media (max-width: 640px) {
-  .watching-page { padding: 16px !important; }
+  .watching-page {
+    padding: 16px !important;
+  }
 }
 
 /* Hide scrollbars globally while keeping scroll functionality */
@@ -438,6 +532,304 @@ textarea {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
 *::-webkit-scrollbar {
   display: none;
+}
+
+/* ─── PART 1: ULTRA-WIDE MEDIA GRID LIMITS ─── */
+.media-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .media-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .media-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+/* ─── PART 2: STANDARDIZING INPUT FIELDS & DROPDOWNS ─── */
+.cinetrack-input,
+.cinetrack-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+textarea.cinetrack-input {
+  height: auto;
+  padding: 12px 16px;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.cinetrack-input:focus,
+.cinetrack-select:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.15);
+}
+
+/* ─── PART 3: UNIFYING STATE BLOCKS ─── */
+.state-display-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.state-display-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.state-display-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.state-display-msg {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+/* ─── PART 4: DIALOGS & OVERLAY DEPTHS ─── */
+.mobile-header {
+  z-index: var(--z-header) !important;
+}
+
+.app-sidebar {
+  z-index: var(--z-sidebar) !important;
+}
+
+/* Modal overlays (Reviews, Notes, Lists) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-content-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  max-width: 520px;
+  width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  z-index: var(--z-modal-content);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Strict Unified Page Layout Wrapper */
+.unified-page-container {
+  width: 100%;
+  min-height: calc(100vh - 56px);
+  box-sizing: border-box;
+  padding: 24px 16px 40px 16px;
+  /* 16px exact side gaping on mobile */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  .unified-page-container {
+    min-height: 100vh;
+    padding: 32px 40px 40px 40px;
+    /* 40px exact side gaping on desktop */
+  }
+}
+
+/* Rigid Header Alignment Engine */
+.unified-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+  /* Standardized gap between heading block and page content */
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .unified-page-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+}
+
+/* Enforced Rigid Typography Sizes */
+.page-title {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  color: var(--text-primary) !important;
+  margin: 0 !important;
+  letter-spacing: -0.5px !important;
+  line-height: 1.2 !important;
+}
+
+.page-subtitle {
+  font-size: 14px !important;
+  color: var(--text-muted) !important;
+  margin: 4px 0 0 0 !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+}
+
+@media (min-width: 1024px) {
+  .page-title {
+    font-size: 32px !important;
+    /* Fixed crisp title text on desktop */
+  }
+}
+
+/* Analytics Summary Grid - 6 Cards */
+.analytics-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 24px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .analytics-metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .analytics-metrics-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Twin Chart Flex Grid */
+.analytics-charts-split {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 900px) {
+  .analytics-charts-split {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .analytics-chart-card {
+    flex: 1;
+    min-width: 0; /* Prevents chart containers from expanding beyond parent width */
+  }
+}
+
+/* Right-aligned Header Filter Actions Group */
+.analytics-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Fix global grid scaling on mobile phone screens */
+@media (max-width: 639px) {
+  /* Enforce exactly 2 items per row for standard media cards on mobile */
+  .cinetrack-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    padding: 4px 0 !important;
+  }
+  
+  /* Enforce exactly 1 item per row for in-progress watching items on mobile */
+  .watching-grid-layout {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* Force headers to stack vertically so buttons don't clip text */
+  .unified-page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  /* Make header action rows/buttons span full width on phone displays */
+  .unified-page-header .page-header-btn,
+  .unified-page-header .cinetrack-select,
+  .analytics-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+}
+
+/* Add safe scroll container adjustments for viewports under the 56px fixed top header */
+@media (max-width: 1023px) {
+  .unified-page-container {
+    min-height: calc(100vh - 56px) !important;
+    padding: 16px 16px 80px 16px !important; /* Extra bottom padding to clear mobile thumbs */
+  }
+}
+
+@media (max-width: 767px) {
+  /* Grow buttons, select inputs, and filter pills to standard touch sizing */
+  .page-header-btn, 
+  .cinetrack-select, 
+  .cinetrack-input,
+  .watching-btn-main,
+  .watching-btn-sub {
+    min-height: 44px !important;
+    font-size: 14px !important;
+  }
+
+  /* Keep filter tabs readable and wrap cleanly if they span past the viewport width */
+  .pill-btn {
+    padding: 8px 16px !important;
+    min-height: 38px !important;
+  }
 }

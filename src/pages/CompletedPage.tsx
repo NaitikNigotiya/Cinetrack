@@ -275,7 +275,7 @@ export default function CompletedPage() {
   // ── Skeleton Loader ──
   if (isLoading) {
     return (
-      <div className="page-wrapper completed-page" style={{ padding: 24 }}>
+      <div className="unified-page-container">
         <div className="skeleton" style={{ height: 40, width: '30%', marginBottom: 24 }} />
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           <div className="skeleton" style={{ height: 36, width: 100, borderRadius: 'var(--radius-pill)' }} />
@@ -289,13 +289,12 @@ export default function CompletedPage() {
   const isCompletedEmpty = completedEntries.length === 0
 
   return (
-    <div className="page-wrapper completed-page page-scroll">
-
-      {/* ── HEADER ── */}
-      <header className="cp-header mobile-header-padding">
-        <div className="cp-header-left">
-          <h1 className="cp-title page-title">Completed</h1>
-          <nav className="cp-tab-bar" role="tablist">
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <h1 className="page-title">Completed</h1>
+          <p className="page-subtitle">Your completed titles and stats</p>
+          <nav className="cp-tab-bar" role="tablist" style={{ marginTop: 4 }}>
             {(['timeline', 'calendar', 'list'] as const).map((tab) => {
               const label = tab.charAt(0).toUpperCase() + tab.slice(1)
               return (
@@ -318,7 +317,7 @@ export default function CompletedPage() {
         </div>
 
         {/* Top general stats strip */}
-        <div className="cp-header-stats-strip">
+        <div className="cp-header-stats-strip" style={{ flexShrink: 0 }}>
           <div className="cp-strip-item">
             <span className="cp-strip-lbl">This Month</span>
             <span className="cp-strip-val">{stats.thisMonthCount} titles · {stats.thisMonthHours}h</span>

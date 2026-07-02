@@ -335,7 +335,7 @@ export default function CollectionsPage() {
 
   if (isLoading) {
     return (
-      <div className="page-wrapper collections-page" style={{ padding: 24 }}>
+      <div className="unified-page-container">
         <div className="skeleton" style={{ height: 40, width: '30%', marginBottom: 24 }} />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
           {Array.from({ length: 3 }).map((_, i) => (
@@ -347,13 +347,13 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="page-wrapper collections-page page-scroll">
+    <div className="unified-page-container">
 
       {/* ── DETAIL VIEW OVERLAY ── */}
       {activeCollection ? (
         <div className="col-detail-pane animate-fade-in">
           {/* Header */}
-          <header className="col-detail-header mobile-header-padding">
+          <header className="unified-page-header col-detail-header">
             <button className="col-back-btn" onClick={() => setActiveCollectionId(null)} type="button">
               <ChevronLeft size={16} /> Back to Collections
             </button>
@@ -458,10 +458,10 @@ export default function CollectionsPage() {
               })}
             </div>
           ) : (
-            <div className="col-detail-empty">
-              <span style={{ fontSize: 32 }}>📁</span>
-              <p style={{ fontWeight: 600, margin: '8px 0 4px 0' }}>This collection is empty</p>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Click "+ Add Titles" to select movies</p>
+            <div className="state-display-container">
+              <div className="state-display-icon">🎬</div>
+              <h3 className="state-display-title">Nothing tracked yet</h3>
+              <p className="state-display-msg">Your added items will organize themselves nicely right here.</p>
             </div>
           )}
         </div>
@@ -469,16 +469,14 @@ export default function CollectionsPage() {
         /* ── CENTRAL COLLECTIONS MAIN VIEW ── */
         <div className="col-main-pane animate-fade-in">
           {/* Header */}
-          <header className="wl-header mobile-header-padding" style={{ borderBottom: 'none', padding: '0 0 24px 0' }}>
-            <div className="wl-header-left">
-              <h1 className="wl-title page-title">Collections</h1>
-              <p className="wl-count-label page-subtitle">Organize your movies into lists</p>
+          <header className="unified-page-header">
+            <div>
+              <h1 className="page-title">Collections</h1>
+              <p className="page-subtitle">Organize your movies into lists</p>
             </div>
-            <div className="wl-header-actions">
-              <button className="wl-btn-add-movie" onClick={() => setIsCreateOpen(true)} type="button">
-                <Plus size={16} /> New Collection
-              </button>
-            </div>
+            <button className="page-header-btn" onClick={() => setIsCreateOpen(true)} type="button">
+              + New Collection
+            </button>
           </header>
 
           {/* ⚡ SMART COLLECTIONS SECTION */}
@@ -560,10 +558,10 @@ export default function CollectionsPage() {
                 ))}
               </div>
             ) : (
-              <div className="col-empty-placeholder">
-                <span style={{ fontSize: 32 }}>📂</span>
-                <p style={{ fontWeight: 600, margin: '8px 0 4px 0' }}>No custom collections yet</p>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Create a list to organize your watched titles</p>
+              <div className="state-display-container">
+                <div className="state-display-icon">🎬</div>
+                <h3 className="state-display-title">Nothing tracked yet</h3>
+                <p className="state-display-msg">Your added items will organize themselves nicely right here.</p>
               </div>
             )}
           </section>

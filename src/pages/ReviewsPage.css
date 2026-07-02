@@ -2,8 +2,8 @@
 .reviews-page {
   max-width: 800px;
   margin: 0 auto;
-  padding: var(--space-4) var(--space-4);
-  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 24px);
+  padding: 0 !important;
+  padding-bottom: 40px !important;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -48,7 +48,13 @@
   align-items: center;
   gap: var(--space-2);
   overflow-x: auto;
-  padding-bottom: var(--space-1);
+  padding: 0 24px var(--space-1) 24px;
+}
+
+@media (max-width: 1023px) {
+  .sort-filters-row {
+    padding: 0 16px var(--space-1) 16px;
+  }
 }
 
 .sort-label {
@@ -67,6 +73,7 @@
   background: var(--bg-secondary);
   color: var(--text-secondary);
   transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .sort-btn--active {
@@ -80,6 +87,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding: 0 24px;
+}
+
+@media (max-width: 1023px) {
+  .reviews-list {
+    padding: 0 16px;
+  }
 }
 
 .review-card {

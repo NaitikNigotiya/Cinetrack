@@ -124,12 +124,14 @@ export default function HistoryPage() {
   const totalLogsCount = historyList.length
 
   return (
-    <div className="page-wrapper history-page page-scroll animate-fade-in">
-      {/* Header */}
-      <header className="history-header mobile-header-padding">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <h1 className="history-title page-title">Watch History</h1>
-          <span className="watchlist-badge-count">{totalLogsCount} logs</span>
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h1 className="page-title">Watch History</h1>
+            <span className="watchlist-badge-count">{totalLogsCount} logs</span>
+          </div>
+          <p className="page-subtitle">A timeline of everything you've watched</p>
         </div>
       </header>
 
@@ -164,7 +166,7 @@ export default function HistoryPage() {
       )}
 
       {/* History timeline list */}
-      <main className="history-content" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + var(--safe-bottom) + 24px)' }}>
+      <main className="history-content" style={{ paddingBottom: '40px' }}>
         {isLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div className="skeleton" style={{ height: 28, width: '40%', borderRadius: 4, marginTop: 12 }} />

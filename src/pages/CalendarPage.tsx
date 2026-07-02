@@ -997,20 +997,19 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="calendar-container">
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <h1 className="page-title">Calendar</h1>
+          <p className="page-subtitle">Track release dates and custom logs</p>
+        </div>
 
-      {/* Page header — fixed at top */}
-      <div className="mobile-header-padding" style={{
-        padding: '20px 24px 16px', flexShrink: 0,
-        borderBottom: '1px solid var(--border-default)',
-        background: 'var(--bg-primary)',
-      }}>
-        <div className="calendar-header-container">
-          
+        {/* Header Controls Block */}
+        <div className="calendar-header-container" style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           {/* Month navigation */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button onClick={prevMonth} className="calendar-nav-btn" type="button">‹</button>
-            <h2 style={{ fontSize: '20px', fontWeight: 800,
+            <h2 style={{ fontSize: '18px', fontWeight: 800,
               color: 'var(--text-primary)', margin: 0, minWidth: '160px',
               textAlign: 'center' }}>
               {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -1042,7 +1041,7 @@ export default function CalendarPage() {
             ))}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main body — calendar + optional side panel */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>

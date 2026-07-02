@@ -211,12 +211,14 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="page-wrapper notes-page page-scroll animate-fade-in">
-      <header className="notes-header mobile-header-padding">
-        <h1 className="reviews-title page-title">Notes</h1>
-        <button className="btn-new-note" onClick={() => handleCreateFromTemplate('Blank Note')}>
-          <Plus size={16} />
-          New Note
+    <div className="unified-page-container">
+      <header className="unified-page-header">
+        <div>
+          <h1 className="page-title">Notes</h1>
+          <p className="page-subtitle">Your personal notes and lists</p>
+        </div>
+        <button className="page-header-btn" onClick={() => handleCreateFromTemplate('Blank Note')} type="button">
+          + New Note
         </button>
       </header>
 
@@ -318,9 +320,9 @@ export default function NotesPage() {
 
       {/* Note Editor Overlay Modal */}
       {activeNote && (
-        <div className="note-editor-overlay" onClick={handleCloseEditor}>
+        <div className="modal-overlay" onClick={handleCloseEditor}>
           <div
-            className="note-editor-modal"
+            className="modal-content-box"
             onClick={(e) => e.stopPropagation()}
             style={{
               background: isDarkTheme ? COLOR_PALETTE[localColor].dark : COLOR_PALETTE[localColor].light,
@@ -350,7 +352,7 @@ export default function NotesPage() {
 
               <input
                 type="text"
-                className="note-editor-title-input"
+                className="note-editor-title-input cinetrack-input"
                 placeholder="Title"
                 value={localTitle}
                 onChange={(e) => setLocalTitle(e.target.value)}
@@ -358,7 +360,7 @@ export default function NotesPage() {
               />
 
               <textarea
-                className="note-editor-content-textarea"
+                className="note-editor-content-textarea cinetrack-input"
                 placeholder="Start writing..."
                 value={localContent}
                 onChange={(e) => setLocalContent(e.target.value)}
@@ -385,7 +387,7 @@ export default function NotesPage() {
                 <select
                   value={localCategory}
                   onChange={(e) => setLocalCategory(e.target.value)}
-                  className="note-select-tool"
+                  className="note-select-tool cinetrack-select"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
