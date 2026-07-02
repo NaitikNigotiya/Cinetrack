@@ -112,7 +112,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
           
           {/* Logo — fixed at top */}
-          <div style={{
+          <div className="sidebar-logo" style={{
             padding: '24px 20px 20px 20px',
             borderBottom: '1px solid var(--border-default)',
             flexShrink: 0,

@@ -337,7 +337,7 @@ export default function HomePage() {
               <p className="hp-subtitle page-subtitle">What are we watching today?</p>
             </div>
             <div className="hp-header-right">
-              <div className="hp-clock desktop-only">
+              <div className="hp-clock dashboard-clock">
                 <span className="hp-clock-date">{formattedDate}</span>
                 <span className="hp-clock-sep">·</span>
                 <span className="hp-clock-time">{formattedTime}</span>

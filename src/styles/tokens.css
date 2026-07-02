@@ -833,3 +833,28 @@ textarea.cinetrack-input {
     min-height: 38px !important;
   }
 }
+
+/* Fix 1: Hide Dashboard Date/Time Clock Badge on Mobile Only */
+@media (max-width: 1023px) {
+  .dashboard-clock, 
+  .dashboard-time-badge,
+  .clock-strip {
+    display: none !important;
+  }
+}
+
+/* Fix 2: Hide Sidebar Branding Top Block on Mobile Only to Prevent Layout Overlaps */
+@media (max-width: 1023px) {
+  .sidebar-logo,
+  .sidebar-branding,
+  .sidebar-header-logo {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Ensure the mobile nav item container slides up perfectly to fill the top space */
+  .sidebar-nav-links,
+  .sidebar-menu-items {
+    margin-top: 16px !important;
+  }
+}
